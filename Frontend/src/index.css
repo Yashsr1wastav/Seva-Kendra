@@ -1,0 +1,204 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Professional dark theme - optimized for readability */
+    --background: 222 47% 11%; /* Dark blue-gray background */
+    --foreground: 210 40% 98%; /* Light text for maximum contrast */
+    --card: 222 47% 15%; /* Slightly lighter than background */
+    --card-foreground: 210 40% 98%; /* Light text on cards */
+    --popover: 222 47% 15%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 200 95% 50%; /* Bright blue for dark mode */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 20%; /* Dark gray-blue */
+    --secondary-foreground: 210 40% 98%; /* Light text */
+    --muted: 217 33% 25%;
+    --muted-foreground: 215 20% 65%; /* Light gray for better visibility */
+    --accent: 185 80% 50%; /* Bright teal accent */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 33% 23%;
+    --input: 217 33% 18%; /* Dark input backgrounds */
+    --ring: 200 95% 50%;
+    --radius: 0.75rem;
+    
+    /* Success and info colors - adjusted for dark mode */
+    --success: 142 76% 45%;
+    --success-foreground: 0 0% 100%;
+    --info: 200 95% 50%;
+    --info-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom health organization styles */
+.health-gradient {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary)) 0%,
+    hsl(var(--accent)) 100%
+  );
+}
+
+.health-card-shadow {
+  box-shadow: 0 10px 25px -5px rgba(14, 116, 144, 0.15),
+    0 10px 10px -5px rgba(14, 116, 144, 0.08);
+}
+
+.health-input-focus:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+}
+
+/* Enhanced shadow utilities */
+.shadow-soft {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.shadow-elevated {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-floating {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Color palette utilities for consistent theming */
+.bg-primary-gradient {
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+}
+
+.bg-health-gradient {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.bg-education-gradient {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.bg-social-gradient {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+/* Hover states for interactive elements */
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5;
+}
+
+.button-hover {
+  @apply transition-all duration-200 hover:shadow-md hover:scale-105 active:scale-95;
+}
+
+/* Text utilities for consistent visibility */
+.text-gray-900,
+.text-gray-800,
+.text-gray-700 {
+  color: hsl(var(--foreground));
+}
+
+.text-gray-600,
+.text-gray-500 {
+  color: hsl(var(--muted-foreground));
+}
+
+.text-gray-400,
+.text-gray-300 {
+  color: hsl(var(--muted-foreground));
+}
+
+.text-black {
+  color: hsl(var(--foreground));
+}
+.text-white {
+  color: hsl(var(--primary-foreground));
+}
+
+/* Recharts theming */
+.recharts-default-tooltip {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+.recharts-tooltip-label {
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: hsl(var(--border));
+}
+.recharts-cartesian-axis-tick-value {
+  fill: hsl(var(--muted-foreground));
+}
+.recharts-legend-item-text {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Glass utility for panels/cards */
+.glass-card {
+  background-color: hsl(var(--card) / 0.95);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid hsl(var(--border));
+}
+
+/* Gradient border utility */
+.border-gradient {
+  position: relative;
+}
+.border-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Scrollbar styling */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--secondary));
+  border-radius: 8px;
+  border: 2px solid hsl(var(--background));
+}
+*::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+/* Text selection */
+::selection {
+  background: hsl(var(--primary) / 0.25);
+  color: hsl(var(--foreground));
+}
+
+/* Focus ring helper */
+.ring-focus {
+  outline: none;
+  box-shadow: 0 0 0 3px hsl(var(--ring) / 0.35);
+}
