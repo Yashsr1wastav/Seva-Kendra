@@ -2,13 +2,14 @@ import api from "../lib/api";
 
 // Auth API calls
 export const authAPI = {
-  signIn: (credentials) => api.post("https://seva-kendra-backend.vercel.app/auth/signin", credentials),
-  signUp: (userData) => api.post("https://seva-kendra-backend.vercel.app/auth/signup", userData),
-  signOut: () => api.post("https://seva-kendra-backend.vercel.app/auth/signout"),
-  refreshToken: () => api.post("https://seva-kendra-backend.vercel.app/auth/refresh"),
-  forgotPassword: (email) => api.post("https://seva-kendra-backend.vercel.app/auth/forgot-password", { email }),
+  login: (credentials) => api.post("/auth/login", credentials),
+  signIn: (credentials) => api.post("/auth/signin", credentials),
+  signUp: (userData) => api.post("/auth/signup", userData),
+  signOut: () => api.post("/auth/signout"),
+  refreshToken: () => api.post("/auth/refresh"),
+  forgotPassword: (email) => api.post("/auth/forgot-password", { email }),
   resetPassword: (token, password) =>
-    api.post("https://seva-kendra-backend.vercel.app/auth/reset-password", { token, password }),
+    api.post("/auth/reset-password", { token, password }),
 };
 
 // Dummy data for beneficiaries

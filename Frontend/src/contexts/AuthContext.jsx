@@ -114,26 +114,8 @@ export function AuthProvider({ children }) {
     try {
       dispatch({ type: AUTH_ACTIONS.LOGIN_START });
 
-      // Make API call to backend dummy login endpoint
-      const response = await fetch(
-        "https://seva-kendra-backend.vercel.app/api/v1/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: credentials.email,
-            password: credentials.password,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "Login failed");
-      }
+      // Make API call to backend
+      const result = await authAPI.login(credentials);
 
       const { user, token } = result.data;
 
