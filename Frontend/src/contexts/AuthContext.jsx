@@ -141,7 +141,7 @@ export function AuthProvider({ children }) {
   // Logout function
   const logout = async () => {
     try {
-      await authAPI.signOut();
+      await authAPI.logout();
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
