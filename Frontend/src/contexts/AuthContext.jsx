@@ -116,7 +116,7 @@ export function AuthProvider({ children }) {
 
       // Make API call to backend dummy login endpoint
       const response = await fetch(
-        "http://localhost:5000/api/v1/auth/dummy-login",
+        "https://seva-kendra-backend.vercel.app",
         {
           method: "POST",
           headers: {
