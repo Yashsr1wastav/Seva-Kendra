@@ -2,8 +2,8 @@ import axios from "axios";
 import { toast } from "sonner";
 
 // Create axios instance with default config
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1",
+const api = axios.create({  
+  baseURL: import.meta.env.VITE_API_URL || "https://seva-kendra-backend.vercel.app",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
