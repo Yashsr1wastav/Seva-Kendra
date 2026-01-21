@@ -3,13 +3,10 @@ import api from "../lib/api";
 // Auth API calls
 export const authAPI = {
   login: (credentials) => api.post("/auth/login", credentials),
-  signIn: (credentials) => api.post("/auth/signin", credentials),
-  signUp: (userData) => api.post("/auth/signup", userData),
-  signOut: () => api.post("/auth/signout"),
-  refreshToken: () => api.post("/auth/refresh"),
-  forgotPassword: (email) => api.post("/auth/forgot-password", { email }),
-  resetPassword: (token, password) =>
-    api.post("/auth/reset-password", { token, password }),
+  register: (userData) => api.post("/auth/register", userData),
+  logout: () => api.post("/auth/logout"),
+  dummyLogin: (credentials) => api.post("/auth/dummy-login", credentials),
+  verifyToken: () => api.get("/auth/verify"),
 };
 
 // Dummy data for beneficiaries
@@ -743,12 +740,9 @@ export const workshopAndAwarenessAPI = workshopAPI;
 export const userAPI = {
   getAll: (params) => api.get("/users", { params }),
   getById: (id) => api.get(`/users/${id}`),
-  getProfile: () => api.get("/users/profile"),
-  updateProfile: (data) => api.put("/users/profile", data),
   create: (data) => api.post("/users", data),
   update: (id, data) => api.put(`/users/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`),
-  changePassword: (data) => api.post("/users/change-password", data),
 };
 
 // Dashboard API calls with dummy data
