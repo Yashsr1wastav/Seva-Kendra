@@ -3,7 +3,7 @@ import { toast } from "sonner";
 
 // Create axios instance with default config
 const api = axios.create({  
-  baseURL: import.meta.env.VITE_API_URL || "https://seva-kendra-backend.vercel.app",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
@@ -35,7 +35,7 @@ api.interceptors.response.use(
 
     if (error.response) {
       // Server responded with error status
-      const { data, status } = error.response;
+      const { data, status, config } = error.response;
 
       if (status === 401) {
         // Handle unauthorized access
@@ -56,18 +56,29 @@ api.interceptors.response.use(
       } else if (typeof data === "string") {
         errorMessage = data;
       } else if (status === 404) {
-        errorMessage = "Resource not found";
+        errorMessage = `Route not found: ${config.method?.toUpperCase()} ${config.url}`;
       } else if (status === 500) {
         errorMessage = "Server error. Please try again later.";
       } else if (status >= 400 && status < 500) {
-        errorMessage = "Request failed. Please check your input.";
+        errorMessage = data?.message || "Request failed. Please check your input.";
       }
+
+      // Log error details for debugging
+      console.error("API Error:", {
+        status,
+        url: config.url,
+        method: config.method,
+        message: errorMessage,
+        data,
+      });
     } else if (error.request) {
       // Request made but no response received
       errorMessage = "Network error. Please check your connection.";
+      console.error("Network Error:", error.request);
     } else {
       // Error in request setup
       errorMessage = error.message || "Failed to make request";
+      console.error("Request Setup Error:", error.message);
     }
 
     // Show error toast
