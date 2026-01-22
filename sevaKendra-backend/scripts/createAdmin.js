@@ -4,7 +4,7 @@ import { config } from "dotenv";
 
 config();
 
-const mongoUrl = process.env.MONGO_URL;
+const mongoUrl = process.env.MONGODB_URI || process.env.MONGO_URL;
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
