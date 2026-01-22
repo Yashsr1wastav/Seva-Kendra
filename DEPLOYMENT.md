@@ -60,6 +60,29 @@
 
 ## Vercel Deployment
 
+### IMPORTANT: MongoDB Atlas Setup (Do This First!)
+
+Before deploying to Vercel, you MUST configure MongoDB Atlas to allow Vercel connections:
+
+1. Go to [MongoDB Atlas](https://cloud.mongodb.com/)
+2. Select your cluster
+3. Click **"Network Access"** in the left sidebar
+4. Click **"Add IP Address"**
+5. Click **"Allow Access from Anywhere"**
+6. Enter `0.0.0.0/0` in the IP field
+7. Click **"Confirm"**
+
+⚠️ **Without this step, Vercel deployment will fail with timeout errors!**
+
+### Get Your MongoDB Connection String
+
+1. In MongoDB Atlas, click **"Database"** in left sidebar
+2. Click **"Connect"** button on your cluster
+3. Select **"Connect your application"**
+4. Copy the connection string (looks like: `mongodb+srv://username:password@cluster.mongodb.net/...`)
+5. Replace `<password>` with your actual database password
+6. Save this connection string - you'll need it for Vercel
+
 ### Deploy Backend to Vercel
 1. Push your code to GitHub
 2. Go to [Vercel Dashboard](https://vercel.com/dashboard)
@@ -74,16 +97,23 @@
 
 6. Add Environment Variables in Vercel:
    ```
+   MONGODB_URI=mongodb+srv://your-username:your-password@cluster.mongodb.net/seva-kendra?retryWrites=true&w=majority
+   JWT_SECRET=your-secure-random-secret-key-min-32-characters
    NODE_ENV=production
-   MONGODB_URI=your-mongodb-atlas-connection-string
-   JWT_SECRET=your-secure-random-secret-key
-   ADMIN_EMAIL=admin@seva.com
-   ADMIN_PASSWORD=your-secure-password
-   FRONTEND_URL=https://your-frontend.vercel.app
+   ADMIN_EMAIL=admin@sevakendra.com
+   ADMIN_PASSWORD=Admin@123
    ```
+   
+   **CRITICAL:** 
+   - Replace the entire MONGODB_URI with YOUR actual MongoDB connection string
+   - Make sure JWT_SECRET is at least 32 characters long
+   - Use a strong password for ADMIN_PASSWORD
 
 7. Click "Deploy"
-8. Copy your backend URL (e.g., `https://seva-kendra-backend.vercel.app`)
+8. Wait for deployment to complete
+9. Click on the deployment URL to open your backend
+10. You should see: `{"status":"success","message":"Server is running"}`
+11. Copy your backend URL (e.g., `https://seva-kendra-backend-xyz.vercel.app`)
 
 ### Deploy Frontend to Vercel
 1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
