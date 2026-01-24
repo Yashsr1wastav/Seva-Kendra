@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import sevaLogo from "../assets/seva_logo.png";
+import usePermissions from "../hooks/usePermissions";
 import {
   FileText,
   Download,
@@ -72,6 +73,7 @@ import {
 } from "../services/api";
 
 const ModuleReports = () => {
+  const { hasModuleAccess, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [module, setModule] = useState("");
@@ -96,11 +98,16 @@ const ModuleReports = () => {
   const [diseaseType, setDiseaseType] = useState("");
   const [treatmentStatus, setTreatmentStatus] = useState("");
 
-  const modules = [
-    { value: "education", label: "Education", icon: GraduationCap },
-    { value: "health", label: "Health", icon: Heart },
-    { value: "social-justice", label: "Social Justice", icon: Scale },
+  const allModules = [
+    { value: "education", label: "Education", icon: GraduationCap, permissionKey: "education" },
+    { value: "health", label: "Health", icon: Heart, permissionKey: "health" },
+    { value: "social-justice", label: "Social Justice", icon: Scale, permissionKey: "socialJustice" },
   ];
+
+  // Filter modules based on user's access permissions
+  const modules = useMemo(() => {
+    return allModules.filter(mod => hasModuleAccess(mod.permissionKey));
+  }, [hasModuleAccess]);
 
   const educationCategories = [
     { value: "study-centers", label: "Study Centers" },
@@ -183,6 +190,14 @@ const ModuleReports = () => {
     if (module === "health") return healthCategories;
     if (module === "social-justice") return socialJusticeCategories;
     return [];
+  };
+
+  // Get permission key for the currently selected module
+  const getCurrentModulePermissionKey = () => {
+    if (module === "education") return "education";
+    if (module === "health") return "health";
+    if (module === "social-justice") return "socialJustice";
+    return null;
   };
 
   const generateSocialJusticeReport = async (params) => {
@@ -1353,12 +1368,12 @@ const ModuleReports = () => {
   const categoryLabel = getCategoryLabel(category);
 
   return (
-    <div className="min-h-screen bg-background from-blue-50 via-white to-purple-50 lg:flex">
+    <div className="min-h-screen bg-background lg:flex">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       <div className="flex-1 lg:ml-0">
         {/* Mobile Header with Menu */}
-        <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white shadow-md border-b">
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-card shadow-md border-b">
           <div className="flex items-center justify-between px-4 py-3">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -1379,7 +1394,7 @@ const ModuleReports = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h1 className="text-3xl sm:text-4xl font-bold text-foreground flex items-center gap-3">
-                  <div className="p-2 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl shadow-lg">
+                  <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg">
                     <FileText className="w-7 h-7 text-white" />
                   </div>
                   Module Reports
@@ -1401,13 +1416,13 @@ const ModuleReports = () => {
           </div>
 
           {/* Filters Section */}
-          <Card className="mb-6 shadow-lg border-0 overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <Card className="mb-6 shadow-lg border border-border overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-primary to-accent text-white">
               <CardTitle className="flex items-center gap-2 text-white">
                 <Filter className="w-5 h-5" />
                 Report Configuration
               </CardTitle>
-              <CardDescription className="text-blue-50">
+              <CardDescription className="text-primary-foreground/80">
                 Select module, report parameters and apply filters to generate
                 customized reports
               </CardDescription>
@@ -1500,7 +1515,7 @@ const ModuleReports = () => {
                 <Button
                   onClick={handleGenerateReport}
                   disabled={loading || !module || !category}
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-md hover:shadow-lg transition-all"
+                  className="flex items-center gap-2 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-md hover:shadow-lg transition-all"
                 >
                   {loading ? (
                     <>
@@ -1515,25 +1530,29 @@ const ModuleReports = () => {
                   )}
                 </Button>
 
-                <Button
-                  variant="outline"
-                  onClick={handleExportPDF}
-                  disabled={!reportData}
-                  className="flex items-center gap-2 border-2 hover:bg-red-50 hover:border-red-300 transition-all"
-                >
-                  <Download className="w-4 h-4" />
-                  Export PDF
-                </Button>
+                {canExport(getCurrentModulePermissionKey()) && (
+                  <Button
+                    variant="outline"
+                    onClick={handleExportPDF}
+                    disabled={!reportData}
+                    className="flex items-center gap-2 border-2 hover:bg-destructive/10 hover:border-destructive transition-all"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export PDF
+                  </Button>
+                )}
 
-                <Button
-                  variant="outline"
-                  onClick={handleExportExcel}
-                  disabled={!reportData}
-                  className="flex items-center gap-2 border-2 hover:bg-green-50 hover:border-green-300 transition-all"
-                >
-                  <Download className="w-4 h-4" />
-                  Export Excel
-                </Button>
+                {canExport(getCurrentModulePermissionKey()) && (
+                  <Button
+                    variant="outline"
+                    onClick={handleExportExcel}
+                    disabled={!reportData}
+                    className="flex items-center gap-2 border-2 hover:bg-success/10 hover:border-success transition-all"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export Excel
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1544,73 +1563,73 @@ const ModuleReports = () => {
               <>
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                  <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-blue-50 to-blue-100">
+                  <Card className="border border-border shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-card to-card/50">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-blue-700">
+                      <CardTitle className="text-sm font-medium text-primary">
                         Total Records
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center justify-between">
-                        <div className="text-3xl sm:text-4xl font-bold text-blue-900">
+                        <div className="text-3xl sm:text-4xl font-bold text-foreground">
                           {reportData.summary.totalRecords || 0}
                         </div>
-                        <div className="p-3 bg-blue-200 rounded-xl">
-                          <Users className="w-7 h-7 text-blue-700" />
+                        <div className="p-3 bg-primary/20 rounded-xl">
+                          <Users className="w-7 h-7 text-primary" />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-green-50 to-green-100">
+                  <Card className="border border-border shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-card to-card/50">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-green-700">
+                      <CardTitle className="text-sm font-medium text-success">
                         Active
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center justify-between">
-                        <div className="text-3xl sm:text-4xl font-bold text-green-900">
+                        <div className="text-3xl sm:text-4xl font-bold text-foreground">
                           {reportData.summary.active || 0}
                         </div>
-                        <div className="p-3 bg-green-200 rounded-xl">
-                          <TrendingUp className="w-7 h-7 text-green-700" />
+                        <div className="p-3 bg-success/20 rounded-xl">
+                          <TrendingUp className="w-7 h-7 text-success" />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-yellow-50 to-yellow-100">
+                  <Card className="border border-border shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-card to-card/50">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-yellow-700">
+                      <CardTitle className="text-sm font-medium text-warning">
                         Pending
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center justify-between">
-                        <div className="text-3xl sm:text-4xl font-bold text-yellow-900">
+                        <div className="text-3xl sm:text-4xl font-bold text-foreground">
                           {reportData.summary.pending || 0}
                         </div>
-                        <div className="p-3 bg-yellow-200 rounded-xl">
-                          <Activity className="w-7 h-7 text-yellow-700" />
+                        <div className="p-3 bg-warning/20 rounded-xl">
+                          <Activity className="w-7 h-7 text-warning" />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-purple-50 to-purple-100">
+                  <Card className="border border-border shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-card to-card/50">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-purple-700">
+                      <CardTitle className="text-sm font-medium text-accent">
                         Completion Rate
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="flex items-center justify-between">
-                        <div className="text-3xl sm:text-4xl font-bold text-purple-900">
+                        <div className="text-3xl sm:text-4xl font-bold text-foreground">
                           {reportData.summary.completionRate || 0}%
                         </div>
-                        <div className="p-3 bg-purple-200 rounded-xl">
-                          <PieChart className="w-7 h-7 text-purple-700" />
+                        <div className="p-3 bg-accent/20 rounded-xl">
+                          <PieChart className="w-7 h-7 text-accent" />
                         </div>
                       </div>
                     </CardContent>
@@ -1618,8 +1637,8 @@ const ModuleReports = () => {
                 </div>
 
                 {/* Data Table */}
-                <Card className="border-0 shadow-lg">
-                  <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-500 border-b">
+                <Card className="border border-border shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-primary to-accent border-b border-border">
                     <CardTitle className="flex items-center gap-2 text-white">
                       <FileText className="w-5 h-5" />
                       Detailed Report Data
@@ -1629,14 +1648,14 @@ const ModuleReports = () => {
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-blue-950/50 hover:bg-blue-950/50 border-b border-blue-900">
-                            <TableHead className="font-semibold text-blue-300">#</TableHead>
-                            <TableHead className="font-semibold text-blue-300">Name</TableHead>
-                            <TableHead className="font-semibold text-blue-300">Module</TableHead>
-                            <TableHead className="font-semibold text-blue-300">Category</TableHead>
-                            <TableHead className="font-semibold text-blue-300">Status</TableHead>
-                            <TableHead className="font-semibold text-blue-300">Date</TableHead>
-                            <TableHead className="font-semibold text-blue-300">Details</TableHead>
+                          <TableRow className="bg-secondary/50 hover:bg-secondary/50 border-b border-border">
+                            <TableHead className="font-semibold text-foreground">#</TableHead>
+                            <TableHead className="font-semibold text-foreground">Name</TableHead>
+                            <TableHead className="font-semibold text-foreground">Module</TableHead>
+                            <TableHead className="font-semibold text-foreground">Category</TableHead>
+                            <TableHead className="font-semibold text-foreground">Status</TableHead>
+                            <TableHead className="font-semibold text-foreground">Date</TableHead>
+                            <TableHead className="font-semibold text-foreground">Details</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1659,11 +1678,11 @@ const ModuleReports = () => {
                               const status = record.status || "N/A";
                               const statusClass =
                                 status === "active"
-                                  ? "bg-green-100 text-green-800"
+                                  ? "bg-success/20 text-success"
                                   : status === "pending"
-                                  ? "bg-amber-100 text-amber-800"
+                                  ? "bg-warning/20 text-warning"
                                   : status === "completed"
-                                  ? "bg-blue-100 text-blue-800"
+                                  ? "bg-primary/20 text-primary"
                                   : "bg-secondary text-foreground";
 
                               return (
@@ -1712,11 +1731,11 @@ const ModuleReports = () => {
 
                 {/* Chart Visualization */}
                 {chartData && (
-                  <Card className="border-0 shadow-lg">
-                    <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 border-b">
+                  <Card className="border border-border shadow-lg">
+                    <CardHeader className="bg-gradient-to-r from-primary to-accent border-b border-border">
                       <div className="flex items-center justify-between flex-wrap gap-3">
                         <CardTitle className="flex items-center gap-2 text-white">
-                          <BarChart3 className="w-5 h-5 text-indigo-600" />
+                          <BarChart3 className="w-5 h-5" />
                           Visual Analytics - Monthly Trend
                         </CardTitle>
                         <div className="flex items-center gap-2">
@@ -1911,15 +1930,15 @@ const ModuleReports = () => {
                           );
                         })()}
                       </div>
-                      <div className="mt-4 p-4 bg-blue-950/30 rounded-lg border border-blue-800">
+                      <div className="mt-4 p-4 bg-secondary/50 rounded-lg border border-border">
                         <p className="text-sm text-foreground">
                           <span className="font-semibold">Insight:</span> This
                           chart shows the monthly distribution of records for{" "}
-                          <span className="font-medium text-blue-400">
+                          <span className="font-medium text-primary">
                             {category}
                           </span>{" "}
                           in the{" "}
-                          <span className="font-medium text-blue-700">
+                          <span className="font-medium text-accent">
                             {module}
                           </span>{" "}
                           module. Switch between Bar, Line, and Area chart types
@@ -1934,11 +1953,11 @@ const ModuleReports = () => {
 
             {/* Empty State */}
             {!reportData && (
-              <Card className="border-0 shadow-lg">
+              <Card className="border border-border shadow-lg">
                 <CardContent className="py-16">
                   <div className="text-center">
-                    <div className="inline-block p-6 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full mb-6">
-                      <Calendar className="w-16 h-16 text-blue-600" />
+                    <div className="inline-block p-6 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full mb-6">
+                      <Calendar className="w-16 h-16 text-primary" />
                     </div>
                     <h3 className="text-xl font-bold text-foreground mb-3">
                       No Report Generated

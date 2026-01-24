@@ -18,7 +18,7 @@ router.get("/", healthCheck);
 router.use("/auth", authRouter);
 
 // User management routes
-router.use("/users", userRouter);
+router.use("/user", userRouter);
 
 // Education module routes
 router.use("/education", educationRouter);

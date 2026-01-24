@@ -36,6 +36,7 @@ import OtherDiseases from "./pages/OtherDiseases";
 import CBUCBODetails from "./pages/CBUCBODetails";
 import Entitlements from "./pages/Entitlements";
 import TrackingDashboard from "./pages/TrackingDashboard";
+import UserManagement from "./pages/UserManagement";
 
 function App() {
   return (
@@ -274,6 +275,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Workshops />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute>
+                <UserManagement />
               </ProtectedRoute>
             }
           />

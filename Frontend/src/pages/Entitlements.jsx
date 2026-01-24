@@ -65,8 +65,10 @@ import {
 } from "lucide-react";
 import { entitlementsAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
+import usePermissions from "../hooks/usePermissions";
 
 const Entitlements = () => {
+  const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const entitlementTypes = [
     "Pension",
     "Ration Card",
@@ -354,7 +356,7 @@ const Entitlements = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Mobile Header */}
-        <div className="lg:hidden bg-white shadow-sm p-4 flex items-center">
+        <div className="lg:hidden bg-card shadow-sm p-4 flex items-center">
           <Button
             variant="ghost"
             size="sm"
@@ -379,10 +381,12 @@ const Entitlements = () => {
                   Manage government entitlements and benefits for beneficiaries
                 </p>
               </div>
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Entitlement
-              </Button>
+              {canCreate("socialJustice") && (
+                <Button onClick={() => setIsCreateModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Entitlement
+                </Button>
+              )}
             </div>
 
             {/* Search and Filters */}
@@ -528,129 +532,133 @@ const Entitlements = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedEntitlement(entitlement);
-                                  setFormData({
-                                    householdCode:
-                                      entitlement.householdCode || "",
-                                    idCode: entitlement.idCode || "",
-                                    beneficiaryId:
-                                      entitlement.beneficiaryId || "",
-                                    beneficiaryName:
-                                      entitlement.beneficiaryName ||
-                                      entitlement.name ||
-                                      "",
-                                    name: entitlement.name || "",
-                                    headOfHousehold:
-                                      entitlement.headOfHousehold || "",
-                                    contactNo: entitlement.contactNo || "",
-                                    projectResponsible:
-                                      entitlement.projectResponsible || "",
-                                    dateOfReporting: entitlement.dateOfReporting
-                                      ? entitlement.dateOfReporting.split(
-                                          "T"
-                                        )[0]
-                                      : "",
-                                    reportedBy: entitlement.reportedBy || "",
-                                    age: entitlement.age || "",
-                                    gender: entitlement.gender || "",
-                                    wardNo: entitlement.wardNo || "",
-                                    habitation: entitlement.habitation || "",
-                                    entitlementType:
-                                      entitlement.entitlementType ||
-                                      entitlement.schemes?.eligibleSchemes ||
-                                      "",
-                                    entitlementDetails:
-                                      entitlement.entitlementDetails || "",
-                                    applicationDate: entitlement.applicationDate
-                                      ? entitlement.applicationDate.split(
-                                          "T"
-                                        )[0]
-                                      : "",
-                                    documentsSubmitted:
-                                      entitlement.documentsSubmitted || "",
-                                    verificationStatus:
-                                      entitlement.verificationStatus || "",
-                                    approvalDate: entitlement.approvalDate
-                                      ? entitlement.approvalDate.split("T")[0]
-                                      : "",
-                                    disbursementDate:
-                                      entitlement.disbursementDate
-                                        ? entitlement.disbursementDate.split(
+                              {canEdit("socialJustice") && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedEntitlement(entitlement);
+                                    setFormData({
+                                      householdCode:
+                                        entitlement.householdCode || "",
+                                      idCode: entitlement.idCode || "",
+                                      beneficiaryId:
+                                        entitlement.beneficiaryId || "",
+                                      beneficiaryName:
+                                        entitlement.beneficiaryName ||
+                                        entitlement.name ||
+                                        "",
+                                      name: entitlement.name || "",
+                                      headOfHousehold:
+                                        entitlement.headOfHousehold || "",
+                                      contactNo: entitlement.contactNo || "",
+                                      projectResponsible:
+                                        entitlement.projectResponsible || "",
+                                      dateOfReporting: entitlement.dateOfReporting
+                                        ? entitlement.dateOfReporting.split(
                                             "T"
                                           )[0]
                                         : "",
-                                    amountDisbursed:
-                                      entitlement.amountDisbursed || "",
-                                    status: entitlement.status || "Applied",
-                                    remarks: entitlement.remarks || "",
-                                    followUpRequired:
-                                      entitlement.followUpRequired || false,
-                                    nextFollowUpDate:
-                                      entitlement.nextFollowUpDate
-                                        ? entitlement.nextFollowUpDate.split(
-                                            "T"
-                                          )[0]
-                                        : "",
-                                    contactNumber:
-                                      entitlement.contactNumber || "",
-                                    address: entitlement.address || "",
-                                    schemes: {
-                                      eligibleSchemes:
+                                      reportedBy: entitlement.reportedBy || "",
+                                      age: entitlement.age || "",
+                                      gender: entitlement.gender || "",
+                                      wardNo: entitlement.wardNo || "",
+                                      habitation: entitlement.habitation || "",
+                                      entitlementType:
                                         entitlement.entitlementType ||
                                         entitlement.schemes?.eligibleSchemes ||
                                         "",
-                                      natureOfIssue:
-                                        entitlement.schemes?.natureOfIssue ||
-                                        "",
-                                      status:
-                                        entitlement.schemes?.status ||
-                                        "Pending",
-                                    },
-                                  });
-                                  setIsEditModalOpen(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-red-600 hover:text-red-700"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Are you sure?
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will
-                                      permanently delete the entitlement record.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() =>
-                                        handleDelete(entitlement._id)
-                                      }
-                                      className="bg-red-600 hover:bg-red-700"
+                                      entitlementDetails:
+                                        entitlement.entitlementDetails || "",
+                                      applicationDate: entitlement.applicationDate
+                                        ? entitlement.applicationDate.split(
+                                            "T"
+                                          )[0]
+                                        : "",
+                                      documentsSubmitted:
+                                        entitlement.documentsSubmitted || "",
+                                      verificationStatus:
+                                        entitlement.verificationStatus || "",
+                                      approvalDate: entitlement.approvalDate
+                                        ? entitlement.approvalDate.split("T")[0]
+                                        : "",
+                                      disbursementDate:
+                                        entitlement.disbursementDate
+                                          ? entitlement.disbursementDate.split(
+                                              "T"
+                                            )[0]
+                                          : "",
+                                      amountDisbursed:
+                                        entitlement.amountDisbursed || "",
+                                      status: entitlement.status || "Applied",
+                                      remarks: entitlement.remarks || "",
+                                      followUpRequired:
+                                        entitlement.followUpRequired || false,
+                                      nextFollowUpDate:
+                                        entitlement.nextFollowUpDate
+                                          ? entitlement.nextFollowUpDate.split(
+                                              "T"
+                                            )[0]
+                                          : "",
+                                      contactNumber:
+                                        entitlement.contactNumber || "",
+                                      address: entitlement.address || "",
+                                      schemes: {
+                                        eligibleSchemes:
+                                          entitlement.entitlementType ||
+                                          entitlement.schemes?.eligibleSchemes ||
+                                          "",
+                                        natureOfIssue:
+                                          entitlement.schemes?.natureOfIssue ||
+                                          "",
+                                        status:
+                                          entitlement.schemes?.status ||
+                                          "Pending",
+                                      },
+                                    });
+                                    setIsEditModalOpen(true);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDelete("socialJustice") && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700"
                                     >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Are you sure?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This will
+                                        permanently delete the entitlement record.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() =>
+                                          handleDelete(entitlement._id)
+                                        }
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

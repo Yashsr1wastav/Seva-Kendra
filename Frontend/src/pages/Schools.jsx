@@ -46,6 +46,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { TimeRangePicker } from "@/components/ui/time-range-picker";
 import {
   School,
   Plus,
@@ -59,8 +60,10 @@ import {
 } from "lucide-react";
 import { schoolAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
+import usePermissions from "../hooks/usePermissions";
 
 const Schools = () => {
+  const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -213,7 +216,7 @@ const Schools = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Mobile Header */}
-        <div className="lg:hidden bg-white shadow-md p-4 flex items-center border-b border-border">
+        <div className="lg:hidden bg-card shadow-md p-4 flex items-center border-b border-border">
           <Button
             variant="ghost"
             size="sm"
@@ -234,10 +237,12 @@ const Schools = () => {
                 <h1 className="text-3xl font-bold text-foreground">Schools</h1>
                 <p className="text-muted-foreground">Manage educational institutions</p>
               </div>
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add School
-              </Button>
+              {canCreate("education") && (
+                <Button onClick={() => setIsCreateModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add School
+                </Button>
+              )}
             </div>
 
             {/* Search and Filters */}
@@ -387,41 +392,45 @@ const Schools = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => openEditModal(school)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Are you absolutely sure?
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will
-                                      permanently delete the school record.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(school._id)}
-                                    >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                              {canEdit("education") && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openEditModal(school)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDelete("education") && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Are you absolutely sure?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This will
+                                        permanently delete the school record.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDelete(school._id)}
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -587,18 +596,18 @@ const Schools = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="schoolTimings">School Timings *</Label>
-                      <Input
+                      <TimeRangePicker
+                        label="School Timings *"
                         id="schoolTimings"
                         value={formData.schoolTimings}
-                        onChange={(e) =>
+                        onChange={(value) =>
                           setFormData({
                             ...formData,
-                            schoolTimings: e.target.value,
+                            schoolTimings: value,
                           })
                         }
-                        placeholder="e.g., 9:00 AM - 3:00 PM"
-                        required
+                        startLabel="Opening Time"
+                        endLabel="Closing Time"
                       />
                     </div>
                     <div>
@@ -854,20 +863,18 @@ const Schools = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="editSchoolTimings">
-                        School Timings *
-                      </Label>
-                      <Input
+                      <TimeRangePicker
+                        label="School Timings *"
                         id="editSchoolTimings"
                         value={formData.schoolTimings}
-                        onChange={(e) =>
+                        onChange={(value) =>
                           setFormData({
                             ...formData,
-                            schoolTimings: e.target.value,
+                            schoolTimings: value,
                           })
                         }
-                        placeholder="e.g., 9:00 AM - 3:00 PM"
-                        required
+                        startLabel="Opening Time"
+                        endLabel="Closing Time"
                       />
                     </div>
                     <div>

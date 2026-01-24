@@ -84,7 +84,7 @@ export default function SignIn() {
       
       <Card className="w-full max-w-md shadow-2xl border-2 border-primary/20 bg-card/95 backdrop-blur-sm relative z-10">
         <CardHeader className="text-center space-y-4 bg-gradient-to-br from-primary via-primary/95 to-accent py-8 border-b-2 border-primary/30">
-          <div className="mx-auto bg-white p-4 rounded-2xl w-fit shadow-2xl transform hover:scale-105 transition-transform duration-300">
+          <div className="mx-auto bg-card p-4 rounded-2xl w-fit shadow-2xl transform hover:scale-105 transition-transform duration-300">
             <img src={sevaLogo} alt="Seva Kendra Logo" className="w-20 h-20 object-contain" />
           </div>
           <div className="space-y-2">

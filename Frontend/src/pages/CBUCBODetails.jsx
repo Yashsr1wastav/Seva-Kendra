@@ -62,8 +62,10 @@ import {
 } from "lucide-react";
 import { cbucboDetailsAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
+import usePermissions from "../hooks/usePermissions";
 
 const CBUCBODetails = () => {
+  const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const statusOptions = [
     "Active",
     "Inactive",
@@ -300,7 +302,7 @@ const CBUCBODetails = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Mobile Header */}
-        <div className="lg:hidden bg-white shadow-sm p-4 flex items-center">
+        <div className="lg:hidden bg-card shadow-sm p-4 flex items-center">
           <Button
             variant="ghost"
             size="sm"
@@ -326,10 +328,12 @@ const CBUCBODetails = () => {
                   Organizations
                 </p>
               </div>
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add CBUCBO Group
-              </Button>
+              {canCreate("socialJustice") && (
+                <Button onClick={() => setIsCreateModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add CBUCBO Group
+                </Button>
+              )}
             </div>
 
             {/* Search and Filters */}
@@ -474,84 +478,88 @@ const CBUCBODetails = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedGroup(group);
-                                  setFormData({
-                                    groupId: group.groupId || "",
-                                    groupName: group.groupName || "",
-                                    groupType: group.groupType || "",
-                                    functionalArea: group.functionalArea || "",
-                                    wardNo: group.wardNo || "",
-                                    habitation: group.habitation || "",
-                                    projectResponsible:
-                                      group.projectResponsible || "",
-                                    dateOfFormation: group.dateOfFormation
-                                      ? group.dateOfFormation.split("T")[0]
-                                      : "",
-                                    totalMembers: group.totalMembers || "",
-                                    groupLeader: group.groupLeader || "",
-                                    contactNo: group.contactNo || "",
-                                    groupMentor: group.groupMentor || "",
-                                    listOfCapacityBuildingTrainings:
-                                      group.listOfCapacityBuildingTrainings ||
-                                      "",
-                                    trainingOutcomes:
-                                      group.trainingOutcomes || "",
-                                    actionPlanForGroup:
-                                      group.actionPlanForGroup || "",
-                                    remarks: group.remarks || "",
-                                    progressReporting:
-                                      group.progressReporting || {},
-                                    majorAchievements:
-                                      group.majorAchievements || "",
-                                    photoDocumentation:
-                                      group.photoDocumentation || {
-                                        before: "",
-                                        intermediate: "",
-                                        after: "",
-                                      },
-                                  });
-                                  setIsEditModalOpen(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-red-600 hover:text-red-700"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Are you sure?
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will
-                                      permanently delete the CBUCBO group.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(group._id)}
-                                      className="bg-red-600 hover:bg-red-700"
+                              {canEdit("socialJustice") && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedGroup(group);
+                                    setFormData({
+                                      groupId: group.groupId || "",
+                                      groupName: group.groupName || "",
+                                      groupType: group.groupType || "",
+                                      functionalArea: group.functionalArea || "",
+                                      wardNo: group.wardNo || "",
+                                      habitation: group.habitation || "",
+                                      projectResponsible:
+                                        group.projectResponsible || "",
+                                      dateOfFormation: group.dateOfFormation
+                                        ? group.dateOfFormation.split("T")[0]
+                                        : "",
+                                      totalMembers: group.totalMembers || "",
+                                      groupLeader: group.groupLeader || "",
+                                      contactNo: group.contactNo || "",
+                                      groupMentor: group.groupMentor || "",
+                                      listOfCapacityBuildingTrainings:
+                                        group.listOfCapacityBuildingTrainings ||
+                                        "",
+                                      trainingOutcomes:
+                                        group.trainingOutcomes || "",
+                                      actionPlanForGroup:
+                                        group.actionPlanForGroup || "",
+                                      remarks: group.remarks || "",
+                                      progressReporting:
+                                        group.progressReporting || {},
+                                      majorAchievements:
+                                        group.majorAchievements || "",
+                                      photoDocumentation:
+                                        group.photoDocumentation || {
+                                          before: "",
+                                          intermediate: "",
+                                          after: "",
+                                        },
+                                    });
+                                    setIsEditModalOpen(true);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDelete("socialJustice") && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700"
                                     >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Are you sure?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This will
+                                        permanently delete the CBUCBO group.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDelete(group._id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

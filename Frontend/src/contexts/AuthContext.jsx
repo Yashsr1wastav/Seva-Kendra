@@ -207,6 +207,31 @@ export function AuthProvider({ children }) {
     [state.user]
   );
 
+  // Check if user has permission
+  const hasPermission = useCallback(
+    (module, action) => {
+      if (!state.user) return false;
+      if (state.user.role === "admin") return true;
+      
+      const permission = `${module}:${action}`;
+      return state.user.permissions?.includes(permission) || false;
+    },
+    [state.user]
+  );
+
+  // Check if user has any of the provided permissions
+  const hasAnyPermission = useCallback(
+    (permissionPairs) => {
+      if (!state.user) return false;
+      if (state.user.role === "admin") return true;
+      
+      return permissionPairs.some(([module, action]) => 
+        hasPermission(module, action)
+      );
+    },
+    [state.user, hasPermission]
+  );
+
   const value = {
     user: state.user,
     token: state.token,
@@ -218,6 +243,8 @@ export function AuthProvider({ children }) {
     register,
     clearError,
     updateUser,
+    hasPermission,
+    hasAnyPermission,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

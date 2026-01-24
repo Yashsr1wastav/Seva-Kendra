@@ -4,34 +4,34 @@
 
 @layer base {
   :root {
-    /* Professional dark theme - optimized for readability */
+    /* Professional dark theme - optimized for readability and contrast */
     --background: 222 47% 11%; /* Dark blue-gray background */
     --foreground: 210 40% 98%; /* Light text for maximum contrast */
-    --card: 222 47% 15%; /* Slightly lighter than background */
-    --card-foreground: 210 40% 98%; /* Light text on cards */
-    --popover: 222 47% 15%;
+    --card: 222 47% 16%; /* Lighter than background for better distinction */
+    --card-foreground: 210 40% 98%; /* Bright light text on cards */
+    --popover: 222 47% 16%;
     --popover-foreground: 210 40% 98%;
-    --primary: 200 95% 50%; /* Bright blue for dark mode */
+    --primary: 200 95% 55%; /* Brighter blue for dark mode */
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 20%; /* Dark gray-blue */
-    --secondary-foreground: 210 40% 98%; /* Light text */
-    --muted: 217 33% 25%;
-    --muted-foreground: 215 20% 65%; /* Light gray for better visibility */
-    --accent: 185 80% 50%; /* Bright teal accent */
+    --secondary: 217 33% 22%; /* Slightly lighter dark gray-blue */
+    --secondary-foreground: 210 40% 98%; /* Bright light text */
+    --muted: 217 33% 28%; /* Lighter muted background */
+    --muted-foreground: 215 20% 75%; /* Much lighter gray for better visibility */
+    --accent: 185 80% 55%; /* Brighter teal accent */
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
-    --border: 217 33% 23%;
-    --input: 217 33% 18%; /* Dark input backgrounds */
-    --ring: 200 95% 50%;
+    --border: 217 33% 28%; /* Lighter borders for better visibility */
+    --input: 217 33% 22%; /* Lighter input backgrounds for better contrast */
+    --ring: 200 95% 55%;
     --radius: 0.75rem;
     
     /* Success and info colors - adjusted for dark mode */
-    --success: 142 76% 45%;
+    --success: 142 76% 50%;
     --success-foreground: 0 0% 100%;
-    --info: 200 95% 50%;
+    --info: 200 95% 55%;
     --info-foreground: 0 0% 100%;
-    --warning: 38 92% 55%;
+    --warning: 38 92% 60%;
     --warning-foreground: 0 0% 100%;
   }
 }
@@ -75,6 +75,21 @@
 
 .shadow-floating {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Date input calendar icon visibility fix for dark mode */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 /* Color palette utilities for consistent theming */

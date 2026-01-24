@@ -50,8 +50,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, Edit, Trash2, Eye, Menu } from "lucide-react";
 import { groupLeaderAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
+import usePermissions from "../hooks/usePermissions";
 
 const GroupLeaders = () => {
+  const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [groupLeaders, setGroupLeaders] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -220,16 +222,17 @@ const GroupLeaders = () => {
                 />
               </div>
             </div>
-            <Dialog
-              open={isCreateModalOpen}
-              onOpenChange={setIsCreateModalOpen}
-            >
-              <DialogTrigger asChild>
-                <Button onClick={() => resetForm()} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Group Leader
-                </Button>
-              </DialogTrigger>
+            {canCreate("education") && (
+              <Dialog
+                open={isCreateModalOpen}
+                onOpenChange={setIsCreateModalOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button onClick={() => resetForm()} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Group Leader
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-screen overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Group Leader</DialogTitle>
@@ -382,6 +385,7 @@ const GroupLeaders = () => {
                 </form>
               </DialogContent>
             </Dialog>
+            )}
           </div>
 
           {/* Group Leaders Table */}
@@ -453,45 +457,49 @@ const GroupLeaders = () => {
                               >
                                 <Eye className="h-4 w-4 text-blue-600" />
                               </button>
-                              <button
-                                onClick={() => openEditModal(leader)}
-                                className="p-1 hover:bg-secondary rounded"
-                                title="Edit"
-                              >
-                                <Edit className="h-4 w-4 text-green-600" />
-                              </button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <button
-                                    className="p-1 hover:bg-secondary rounded"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-4 w-4 text-red-600" />
-                                  </button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Delete Group Leader
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to delete this group
-                                      leader? This action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(leader._id)}
-                                      className="bg-red-600 hover:bg-red-700"
+                              {canEdit("education") && (
+                                <button
+                                  onClick={() => openEditModal(leader)}
+                                  className="p-1 hover:bg-secondary rounded"
+                                  title="Edit"
+                                >
+                                  <Edit className="h-4 w-4 text-green-600" />
+                                </button>
+                              )}
+                              {canDelete("education") && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <button
+                                      className="p-1 hover:bg-secondary rounded"
+                                      title="Delete"
                                     >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                      <Trash2 className="h-4 w-4 text-red-600" />
+                                    </button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Delete Group Leader
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this group
+                                        leader? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDelete(leader._id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

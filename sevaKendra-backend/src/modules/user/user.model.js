@@ -1,10 +1,21 @@
 import { UserRole, UserStatus } from "./user.enum.js";
+import { DefaultPermissions } from "./permission.enum.js";
 import { verifyValue } from "../../utils/auth.utils.js";
 import mongoose, { model, Schema } from "mongoose";
 import bcrypt from "bcryptjs";
 
 const userSchema = new Schema(
   {
+    firstName: {
+      type: String,
+      required: [true, "First name is required"],
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: [true, "Last name is required"],
+      trim: true,
+    },
     email: {
       type: String,
       unique: true,
@@ -26,7 +37,15 @@ const userSchema = new Schema(
     status: {
       type: String,
       enum: Object.values(UserStatus),
-      default: UserStatus.PENDING,
+      default: UserStatus.ACTIVE,
+    },
+    permissions: {
+      type: [String],
+      default: function() {
+        return this.role === UserRole.ADMIN 
+          ? DefaultPermissions.ADMIN 
+          : DefaultPermissions.USER;
+      },
     },
     createdBy: {
       type: mongoose.Types.ObjectId,
@@ -34,6 +53,9 @@ const userSchema = new Schema(
       required: function () {
         return this.role === UserRole.USER;
       },
+    },
+    lastLogin: {
+      type: Date,
     },
   },
   { timestamps: true }

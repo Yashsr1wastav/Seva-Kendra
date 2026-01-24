@@ -54,6 +54,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TimeRangePicker } from "@/components/ui/time-range-picker";
 import {
   Building2,
   Plus,
@@ -68,8 +69,10 @@ import {
 } from "lucide-react";
 import { studyCenterAPI, teacherAPI, groupLeaderAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
+import usePermissions from "../hooks/usePermissions";
 
 const StudyCenters = () => {
+  const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studyCenters, setStudyCenters] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -302,7 +305,7 @@ const StudyCenters = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Mobile Header */}
-        <div className="lg:hidden bg-white shadow-md p-4 flex items-center border-b border-border">
+        <div className="lg:hidden bg-card shadow-md p-4 flex items-center border-b border-border">
           <Button
             variant="ghost"
             size="sm"
@@ -330,14 +333,16 @@ const StudyCenters = () => {
                   Manage education study centers
                 </p>
               </div>
-              <Button
-                onClick={() => setIsCreateModalOpen(true)}
-                className="gap-2 shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Add Study Center"
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Add Study Center
-              </Button>
+              {canCreate("education") && (
+                <Button
+                  onClick={() => setIsCreateModalOpen(true)}
+                  className="gap-2 shadow-sm focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Add Study Center"
+                >
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  Add Study Center
+                </Button>
+              )}
             </div>
 
             {/* Search and Filters */}
@@ -511,13 +516,15 @@ const StudyCenters = () => {
                     <p className="text-sm text-muted-foreground mt-1 mb-4">
                       Get started by adding your first center.
                     </p>
-                    <Button
-                      onClick={() => setIsCreateModalOpen(true)}
-                      className="gap-2"
-                    >
-                      <Plus className="h-4 w-4" aria-hidden="true" />
-                      Add Study Center
-                    </Button>
+                    {canCreate("education") && (
+                      <Button
+                        onClick={() => setIsCreateModalOpen(true)}
+                        className="gap-2"
+                      >
+                        <Plus className="h-4 w-4" aria-hidden="true" />
+                        Add Study Center
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <Table>
@@ -644,65 +651,69 @@ const StudyCenters = () => {
                                 </TooltipTrigger>
                                 <TooltipContent>View Center</TooltipContent>
                               </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => openEditModal(center)}
-                                    aria-label="Edit Center"
-                                    className="text-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
-                                  >
-                                    <Edit
-                                      className="h-4 w-4"
-                                      aria-hidden="true"
-                                    />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Edit Center</TooltipContent>
-                              </Tooltip>
-                              <AlertDialog>
+                              {canEdit("education") && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <AlertDialogTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        aria-label="Delete Center"
-                                        className="text-destructive hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30"
-                                      >
-                                        <Trash2
-                                          className="h-4 w-4"
-                                          aria-hidden="true"
-                                        />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Delete Center</TooltipContent>
-                                </Tooltip>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Delete Center
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will
-                                      permanently delete the study center
-                                      record.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(center._id)}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => openEditModal(center)}
+                                      aria-label="Edit Center"
+                                      className="text-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
                                     >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                      <Edit
+                                        className="h-4 w-4"
+                                        aria-hidden="true"
+                                      />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Edit Center</TooltipContent>
+                                </Tooltip>
+                              )}
+                              {canDelete("education") && (
+                                <AlertDialog>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <AlertDialogTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          aria-label="Delete Center"
+                                          className="text-destructive hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30"
+                                        >
+                                          <Trash2
+                                            className="h-4 w-4"
+                                            aria-hidden="true"
+                                          />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Delete Center</TooltipContent>
+                                  </Tooltip>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Delete Center
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This will
+                                        permanently delete the study center
+                                        record.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDelete(center._id)}
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -847,14 +858,15 @@ const StudyCenters = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="timing">Timing *</Label>
-                      <Input
+                      <TimeRangePicker
+                        label="Timing *"
                         id="timing"
                         value={formData.timing}
-                        onChange={(e) =>
-                          setFormData({ ...formData, timing: e.target.value })
+                        onChange={(value) =>
+                          setFormData({ ...formData, timing: value })
                         }
-                        required
+                        startLabel="Start Time"
+                        endLabel="End Time"
                       />
                     </div>
                     <div>
@@ -1331,14 +1343,15 @@ const StudyCenters = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="editTiming">Timing *</Label>
-                      <Input
+                      <TimeRangePicker
+                        label="Timing *"
                         id="editTiming"
                         value={formData.timing}
-                        onChange={(e) =>
-                          setFormData({ ...formData, timing: e.target.value })
+                        onChange={(value) =>
+                          setFormData({ ...formData, timing: value })
                         }
-                        required
+                        startLabel="Start Time"
+                        endLabel="End Time"
                       />
                     </div>
                     <div>

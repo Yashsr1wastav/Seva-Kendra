@@ -575,18 +575,18 @@ const Dashboard = () => {
               {Object.entries(stats).map(([key, value]) => (
                 <div
                   key={key}
-                  className={`p-2 rounded border ${
+                  className={`p-3 rounded-lg border ${
                     color === "health"
-                      ? "border-red-200 bg-red-50"
+                      ? "border-red-500/30 bg-red-500/10"
                       : color === "education"
-                      ? "border-blue-200 bg-blue-50"
-                      : "border-purple-200 bg-purple-50"
+                      ? "border-blue-500/30 bg-blue-500/10"
+                      : "border-purple-500/30 bg-purple-500/10"
                   }`}
                 >
-                  <p className="text-xs font-medium text-muted-foreground capitalize">
+                  <p className="text-xs font-medium text-foreground capitalize">
                     {key.replace(/([A-Z])/g, " $1").trim()}
                   </p>
-                  <p className="text-lg font-bold text-foreground">{value}</p>
+                  <p className="text-xl font-bold text-foreground">{value}</p>
                 </div>
               ))}
             </div>

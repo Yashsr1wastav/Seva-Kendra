@@ -61,8 +61,10 @@ import {
 } from "lucide-react";
 import { pwdAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
+import usePermissions from "../hooks/usePermissions";
 
 const PWD = () => {
+  const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pwd, setPwd] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -316,10 +318,12 @@ const PWD = () => {
                 </h1>
               </div>
             </div>
-            <Button onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add PWD Record
-            </Button>
+            {canCreate("health") && (
+              <Button onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add PWD Record
+              </Button>
+            )}
           </div>
         </header>
 
@@ -498,41 +502,45 @@ const PWD = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEdit(record)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Delete Record
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure? This action cannot be
-                                      undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(record._id)}
-                                    >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                              {canEdit("health") && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleEdit(record)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDelete("health") && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Delete Record
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure? This action cannot be
+                                        undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDelete(record._id)}
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -949,7 +957,7 @@ const PWD = () => {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select employment status" />
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Employed">Employed</SelectItem>
@@ -961,18 +969,6 @@ const PWD = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="beneficiaryOfGovernmentSchemes">
-                  Beneficiary of Government Schemes
-                </Label>
-                <Textarea
-                  id="beneficiaryOfGovernmentSchemes"
-                  name="beneficiaryOfGovernmentSchemes"
-                  value={formData.beneficiaryOfGovernmentSchemes}
-                  onChange={handleInputChange}
-                  placeholder="Details about government schemes"
-                />
-              </div>
               <div>
                 <Label htmlFor="pensionStatus">Pension Status</Label>
                 <Select
@@ -982,7 +978,7 @@ const PWD = () => {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select pension status" />
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Receiving">Receiving</SelectItem>
@@ -992,6 +988,19 @@ const PWD = () => {
                     <SelectItem value="Unknown">Unknown</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="md:col-span-3">
+                <Label htmlFor="beneficiaryOfGovernmentSchemes">
+                  Beneficiary of Government Schemes
+                </Label>
+                <Textarea
+                  id="beneficiaryOfGovernmentSchemes"
+                  name="beneficiaryOfGovernmentSchemes"
+                  value={formData.beneficiaryOfGovernmentSchemes}
+                  onChange={handleInputChange}
+                  placeholder="Details about government schemes"
+                  rows={2}
+                />
               </div>
             </div>
             <DialogFooter>
@@ -1370,7 +1379,7 @@ const PWD = () => {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select employment status" />
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Employed">Employed</SelectItem>
@@ -1382,18 +1391,6 @@ const PWD = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="md:col-span-2">
-                <Label htmlFor="editBeneficiaryOfGovernmentSchemes">
-                  Beneficiary of Government Schemes
-                </Label>
-                <Textarea
-                  id="editBeneficiaryOfGovernmentSchemes"
-                  name="beneficiaryOfGovernmentSchemes"
-                  value={formData.beneficiaryOfGovernmentSchemes}
-                  onChange={handleInputChange}
-                  placeholder="Details about government schemes"
-                />
-              </div>
               <div>
                 <Label htmlFor="editPensionStatus">Pension Status</Label>
                 <Select
@@ -1403,7 +1400,7 @@ const PWD = () => {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select pension status" />
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Receiving">Receiving</SelectItem>
@@ -1413,6 +1410,19 @@ const PWD = () => {
                     <SelectItem value="Unknown">Unknown</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="md:col-span-3">
+                <Label htmlFor="editBeneficiaryOfGovernmentSchemes">
+                  Beneficiary of Government Schemes
+                </Label>
+                <Textarea
+                  id="editBeneficiaryOfGovernmentSchemes"
+                  name="beneficiaryOfGovernmentSchemes"
+                  value={formData.beneficiaryOfGovernmentSchemes}
+                  onChange={handleInputChange}
+                  placeholder="Details about government schemes"
+                  rows={2}
+                />
               </div>
             </div>
             <DialogFooter>

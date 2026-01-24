@@ -50,8 +50,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, Edit, Trash2, Eye, Menu } from "lucide-react";
 import { teacherAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
+import usePermissions from "../hooks/usePermissions";
 
 const Teachers = () => {
+  const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -236,16 +238,17 @@ const Teachers = () => {
                 />
               </div>
             </div>
-            <Dialog
-              open={isCreateModalOpen}
-              onOpenChange={setIsCreateModalOpen}
-            >
-              <DialogTrigger asChild>
-                <Button onClick={() => resetForm()} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Teacher
-                </Button>
-              </DialogTrigger>
+            {canCreate("education") && (
+              <Dialog
+                open={isCreateModalOpen}
+                onOpenChange={setIsCreateModalOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button onClick={() => resetForm()} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Teacher
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-screen overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Teacher</DialogTitle>
@@ -420,6 +423,7 @@ const Teachers = () => {
                 </form>
               </DialogContent>
             </Dialog>
+            )}
           </div>
 
           {/* Teachers Table */}
@@ -497,45 +501,49 @@ const Teachers = () => {
                               >
                                 <Eye className="h-4 w-4 text-blue-600" />
                               </button>
-                              <button
-                                onClick={() => openEditModal(teacher)}
-                                className="p-1 hover:bg-secondary rounded"
-                                title="Edit"
-                              >
-                                <Edit className="h-4 w-4 text-green-600" />
-                              </button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <button
-                                    className="p-1 hover:bg-secondary rounded"
-                                    title="Delete"
-                                  >
-                                    <Trash2 className="h-4 w-4 text-red-600" />
-                                  </button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Delete Teacher
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to delete this
-                                      teacher? This action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(teacher._id)}
-                                      className="bg-red-600 hover:bg-red-700"
+                              {canEdit("education") && (
+                                <button
+                                  onClick={() => openEditModal(teacher)}
+                                  className="p-1 hover:bg-secondary rounded"
+                                  title="Edit"
+                                >
+                                  <Edit className="h-4 w-4 text-green-600" />
+                                </button>
+                              )}
+                              {canDelete("education") && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <button
+                                      className="p-1 hover:bg-secondary rounded"
+                                      title="Delete"
                                     >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                      <Trash2 className="h-4 w-4 text-red-600" />
+                                    </button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Delete Teacher
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this
+                                        teacher? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDelete(teacher._id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

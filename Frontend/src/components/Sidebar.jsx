@@ -29,11 +29,22 @@ import {
   ClipboardCheck,
   BookOpen,
   Award,
+  Settings,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, activeItem = null }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/signin");
+  };
 
   // Determine active tab based on current pathname
   const getActiveTab = () => {
@@ -51,10 +62,19 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeItem = null }) => {
     setActiveTab(getActiveTab());
   }, [location.pathname]);
 
+  // Check if user has permission for a module
+  const hasModuleAccess = (module) => {
+    if (!user) return false;
+    if (user.role === "admin") return true;
+    // Check if user has any permission for this module (view, create, edit, delete, export)
+    return user.permissions?.some(p => p.startsWith(`${module}:`));
+  };
+
   const tabs = {
     education: {
       name: "Education",
       icon: GraduationCap,
+      module: "education",
       subtabs: [
         {
           name: "Study Centers",
@@ -85,6 +105,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeItem = null }) => {
     health: {
       name: "Health",
       icon: Heart,
+      module: "health",
       subtabs: [
         {
           name: "Health Camps",
@@ -109,6 +130,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeItem = null }) => {
     socialJustice: {
       name: "Social Justice",
       icon: Scale,
+      module: "socialJustice",
       subtabs: [
         {
           name: "CBUCBO Details",
@@ -133,6 +155,11 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeItem = null }) => {
       ],
     },
   };
+
+  // Filter tabs based on user permissions
+  const accessibleTabs = Object.entries(tabs).filter(([tabKey, tab]) => 
+    hasModuleAccess(tab.module)
+  );
 
   return (
     <>
@@ -200,9 +227,26 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeItem = null }) => {
             </Link>
           </div>
 
+          {/* User Management Link - Admin Only */}
+          {user?.role === "admin" && (
+            <div className="px-4 mb-6">
+              <Link
+                to="/users"
+                className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  location.pathname === "/users"
+                    ? "bg-primary text-primary-foreground shadow-lg"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground hover:shadow-sm"
+                }`}
+              >
+                <Settings className="mr-3 h-5 w-5" />
+                User Management
+              </Link>
+            </div>
+          )}
+
           {/* Tabbed Navigation */}
           <div className="px-4">
-            {Object.entries(tabs).map(([tabKey, tab]) => (
+            {accessibleTabs.map(([tabKey, tab]) => (
               <div key={tabKey} className="mb-4">
                 {/* Main Tab Header */}
                 <button
@@ -252,7 +296,32 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeItem = null }) => {
             ))}
           </div>
         </nav>
-      </div>
+        {/* User Info and Logout */}
+        <div className="border-t border-border p-4 mt-auto">
+          <div className="flex items-center gap-3 mb-3 px-2">
+            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <User className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {user?.firstName} {user?.lastName}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user?.email}
+              </p>
+              <span className="text-xs text-primary capitalize">
+                {user?.role}
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+        </div>      </div>
 
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (

@@ -66,19 +66,27 @@ export const login = async (credentials) => {
     throw new APIError("Invalid email or password", 401);
   }
 
+  // Update last login
+  user.lastLogin = new Date();
+  await user.save();
+
   // Generate token
   const token = await generateToken({
     userId: user._id,
     email: user.email,
     role: user.role,
+    permissions: user.permissions,
   });
 
   // Return user without password
   const userResponse = {
     id: user._id,
+    firstName: user.firstName,
+    lastName: user.lastName,
     email: user.email,
     role: user.role,
     status: user.status,
+    permissions: user.permissions,
   };
 
   return {

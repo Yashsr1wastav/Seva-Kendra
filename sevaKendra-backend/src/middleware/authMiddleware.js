@@ -1,5 +1,5 @@
 import { decodeToken } from "../utils/auth.utils.js";
-import { generateAPIError } from "../errors/apiError.js";
+import { APIError } from "../errors/apiError.js";
 import { errorMessage } from "../constant/messages.js";
 import User from "../modules/user/user.model.js";
 import { UserStatus } from "../modules/user/user.enum.js";
@@ -9,14 +9,27 @@ const verifyTokenExists = async (req, res, next) => {
   if (token) {
     const decoded = await decodeToken(req, res, next);
     if (decoded) {
+      // Fetch user to include permissions
+      const user = await User.findById(decoded.userId);
+
+      if (user) {
+        req.user = {
+          _id: user._id,
+          id: user._id,
+          email: user.email,
+          role: user.role,
+          permissions: user.permissions || [],
+        };
+      } else {
+        req.user = {
+          _id: decoded.userId,
+          id: decoded.userId,
+          email: decoded.email,
+          role: decoded.role,
+          permissions: [],
+        };
+      }
       req.decodedToken = decoded;
-      // Set req.user for compatibility with controllers
-      req.user = {
-        _id: decoded.userId,
-        id: decoded.userId,
-        email: decoded.email,
-        role: decoded.role,
-      };
       return next();
     }
   }
@@ -29,22 +42,20 @@ const verifyUserRole = (allowedRoles) => {
     const decoded = await decodeToken(req, res, next);
 
     if (decoded) {
-      const user = await User.findOne({
-        _id: decoded.userId,
-        isDeleted: false,
-      });
+      const user = await User.findById(decoded.userId);
 
       if (!user) {
-        return await generateAPIError(errorMessage.userNotFoundWithId, 404);
+        return next(new APIError(errorMessage.userNotFoundWithId, 404));
       }
 
-      if (user?.status?.status === UserStatus.INACTIVE) {
-        return await generateAPIError(errorMessage.userAccountBlocked, 403);
+      if (user.status !== UserStatus.ACTIVE) {
+        return next(new APIError(errorMessage.userAccountBlocked, 403));
       }
 
       if (allowedRoles.length === 0) {
         req.user = user;
         req.user.currentRole = decoded.role;
+        req.user.permissions = user.permissions || [];
         return next();
       }
 
@@ -53,10 +64,11 @@ const verifyUserRole = (allowedRoles) => {
       if (hasAccess) {
         req.user = user;
         req.user.currentRole = decoded.role;
+        req.user.permissions = user.permissions || [];
         return next();
       }
 
-      res.status(401).send({ message: "Not Authorized" });
+      res.status(403).send({ message: "Access denied. Insufficient permissions." });
     }
   };
 };

@@ -67,8 +67,10 @@ import {
 } from "lucide-react";
 import { workshopAndAwarenessAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
+import usePermissions from "../hooks/usePermissions";
 
 const Workshops = () => {
+  const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [workshops, setWorkshops] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -229,7 +231,7 @@ const Workshops = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Mobile Header */}
-        <div className="lg:hidden bg-white shadow-md p-4 flex items-center border-b border-border">
+        <div className="lg:hidden bg-card shadow-md p-4 flex items-center border-b border-border">
           <Button
             variant="ghost"
             size="sm"
@@ -255,10 +257,12 @@ const Workshops = () => {
                   development
                 </p>
               </div>
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Workshop
-              </Button>
+              {canCreate("socialJustice") && (
+                <Button onClick={() => setIsCreateModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Workshop
+                </Button>
+              )}
             </div>
 
             {/* Search and Filters */}
@@ -396,70 +400,74 @@ const Workshops = () => {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedWorkshop(workshop);
-                                  setFormData({
-                                    groupId: workshop.groupId || "",
-                                    groupName: workshop.groupName || "",
-                                    groupType: workshop.groupType || "",
-                                    wardNo: workshop.wardNo || "",
-                                    habitation: workshop.habitation || "",
-                                    projectResponsible:
-                                      workshop.projectResponsible || "",
-                                    topic: workshop.topic || "",
-                                    dateOfTraining: workshop.dateOfTraining
-                                      ? workshop.dateOfTraining.split("T")[0]
-                                      : "",
-                                    resourcePerson:
-                                      workshop.resourcePerson || "",
-                                    profileOfResourcePerson:
-                                      workshop.profileOfResourcePerson || "",
-                                    agenda: workshop.agenda || "",
-                                    totalParticipants:
-                                      workshop.totalParticipants || "",
-                                    outcome: workshop.outcome || "",
-                                  });
-                                  setIsEditModalOpen(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-red-600 hover:text-red-700"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>
-                                      Are you sure?
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This action cannot be undone. This will
-                                      permanently delete the workshop.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>
-                                      Cancel
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(workshop._id)}
-                                      className="bg-red-600 hover:bg-red-700"
+                              {canEdit("socialJustice") && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedWorkshop(workshop);
+                                    setFormData({
+                                      groupId: workshop.groupId || "",
+                                      groupName: workshop.groupName || "",
+                                      groupType: workshop.groupType || "",
+                                      wardNo: workshop.wardNo || "",
+                                      habitation: workshop.habitation || "",
+                                      projectResponsible:
+                                        workshop.projectResponsible || "",
+                                      topic: workshop.topic || "",
+                                      dateOfTraining: workshop.dateOfTraining
+                                        ? workshop.dateOfTraining.split("T")[0]
+                                        : "",
+                                      resourcePerson:
+                                        workshop.resourcePerson || "",
+                                      profileOfResourcePerson:
+                                        workshop.profileOfResourcePerson || "",
+                                      agenda: workshop.agenda || "",
+                                      totalParticipants:
+                                        workshop.totalParticipants || "",
+                                      outcome: workshop.outcome || "",
+                                    });
+                                    setIsEditModalOpen(true);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDelete("socialJustice") && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-600 hover:text-red-700"
                                     >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Are you sure?
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This will
+                                        permanently delete the workshop.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        Cancel
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDelete(workshop._id)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

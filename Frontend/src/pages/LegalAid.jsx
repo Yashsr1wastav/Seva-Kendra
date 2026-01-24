@@ -67,8 +67,10 @@ import {
 } from "lucide-react";
 import { legalAidServiceAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
+import usePermissions from "../hooks/usePermissions";
 
 const LegalAid = () => {
+  const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [legalAidServices, setLegalAidServices] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -326,7 +328,7 @@ const LegalAid = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Mobile Header */}
-        <div className="lg:hidden bg-white shadow-sm p-4 flex items-center">
+        <div className="lg:hidden bg-card shadow-sm p-4 flex items-center">
           <Button
             variant="ghost"
             size="sm"
@@ -351,10 +353,12 @@ const LegalAid = () => {
                   Manage legal assistance and case tracking for beneficiaries
                 </p>
               </div>
-              <Button onClick={() => setIsCreateModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Legal Case
-              </Button>
+              {canCreate("socialJustice") && (
+                <Button onClick={() => setIsCreateModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Legal Case
+                </Button>
+              )}
             </div>
 
             {/* Search and Filters */}
@@ -508,113 +512,117 @@ const LegalAid = () => {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedService(service);
-                                    setFormData({
-                                      householdCode:
-                                        service.householdCode || "",
-                                      uniqueId: service.uniqueId || "",
-                                      name: service.name || "",
-                                      headOfHousehold:
-                                        service.headOfHousehold || "",
-                                      contactNo: service.contactNo || "",
-                                      projectResponsible:
-                                        service.projectResponsible || "",
-                                      dateOfReporting: service.dateOfReporting
-                                        ? service.dateOfReporting.split("T")[0]
-                                        : "",
-                                      reportedBy: service.reportedBy || "",
-                                      natureOfIssue:
-                                        service.natureOfIssue || "",
-                                      issueDescription:
-                                        service.issueDescription || "",
-                                      actionPlan: service.actionPlan || "",
-                                      caseId: service.caseId || "",
-                                      clientName: service.clientName || "",
-                                      age: service.age || "",
-                                      gender: service.gender || "",
-                                      contactNumber:
-                                        service.contactNumber || "",
-                                      address: service.address || "",
-                                      wardNo: service.wardNo || "",
-                                      habitation: service.habitation || "",
-                                      caseType: service.caseType || "",
-                                      caseDescription:
-                                        service.caseDescription || "",
-                                      dateRegistered: service.dateRegistered
-                                        ? service.dateRegistered.split("T")[0]
-                                        : "",
-                                      lawyerAssigned:
-                                        service.lawyerAssigned || "",
-                                      lawyerContact:
-                                        service.lawyerContact || "",
-                                      courtName: service.courtName || "",
-                                      caseNumber: service.caseNumber || "",
-                                      nextHearingDate: service.nextHearingDate
-                                        ? service.nextHearingDate.split("T")[0]
-                                        : "",
-                                      caseStatus: service.caseStatus || "Open",
-                                      documentsRequired:
-                                        service.documentsRequired || "",
-                                      documentsSubmitted:
-                                        service.documentsSubmitted || "",
-                                      legalAdviceGiven:
-                                        service.legalAdviceGiven || "",
-                                      serviceCharges:
-                                        service.serviceCharges || "",
-                                      paymentStatus:
-                                        service.paymentStatus || "Pending",
-                                      outcome: service.outcome || "",
-                                      remarks: service.remarks || "",
-                                      followUpRequired:
-                                        service.followUpRequired || false,
-                                      nextFollowUpDate: service.nextFollowUpDate
-                                        ? service.nextFollowUpDate.split("T")[0]
-                                        : "",
-                                    });
-                                    setIsEditModalOpen(true);
-                                  }}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="text-red-600 hover:text-red-700"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>
-                                        Are you sure?
-                                      </AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        This action cannot be undone. This will
-                                        permanently delete the legal aid case.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>
-                                        Cancel
-                                      </AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() =>
-                                          handleDelete(service._id)
-                                        }
-                                        className="bg-red-600 hover:bg-red-700"
+                                {canEdit("socialJustice") && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedService(service);
+                                      setFormData({
+                                        householdCode:
+                                          service.householdCode || "",
+                                        uniqueId: service.uniqueId || "",
+                                        name: service.name || "",
+                                        headOfHousehold:
+                                          service.headOfHousehold || "",
+                                        contactNo: service.contactNo || "",
+                                        projectResponsible:
+                                          service.projectResponsible || "",
+                                        dateOfReporting: service.dateOfReporting
+                                          ? service.dateOfReporting.split("T")[0]
+                                          : "",
+                                        reportedBy: service.reportedBy || "",
+                                        natureOfIssue:
+                                          service.natureOfIssue || "",
+                                        issueDescription:
+                                          service.issueDescription || "",
+                                        actionPlan: service.actionPlan || "",
+                                        caseId: service.caseId || "",
+                                        clientName: service.clientName || "",
+                                        age: service.age || "",
+                                        gender: service.gender || "",
+                                        contactNumber:
+                                          service.contactNumber || "",
+                                        address: service.address || "",
+                                        wardNo: service.wardNo || "",
+                                        habitation: service.habitation || "",
+                                        caseType: service.caseType || "",
+                                        caseDescription:
+                                          service.caseDescription || "",
+                                        dateRegistered: service.dateRegistered
+                                          ? service.dateRegistered.split("T")[0]
+                                          : "",
+                                        lawyerAssigned:
+                                          service.lawyerAssigned || "",
+                                        lawyerContact:
+                                          service.lawyerContact || "",
+                                        courtName: service.courtName || "",
+                                        caseNumber: service.caseNumber || "",
+                                        nextHearingDate: service.nextHearingDate
+                                          ? service.nextHearingDate.split("T")[0]
+                                          : "",
+                                        caseStatus: service.caseStatus || "Open",
+                                        documentsRequired:
+                                          service.documentsRequired || "",
+                                        documentsSubmitted:
+                                          service.documentsSubmitted || "",
+                                        legalAdviceGiven:
+                                          service.legalAdviceGiven || "",
+                                        serviceCharges:
+                                          service.serviceCharges || "",
+                                        paymentStatus:
+                                          service.paymentStatus || "Pending",
+                                        outcome: service.outcome || "",
+                                        remarks: service.remarks || "",
+                                        followUpRequired:
+                                          service.followUpRequired || false,
+                                        nextFollowUpDate: service.nextFollowUpDate
+                                          ? service.nextFollowUpDate.split("T")[0]
+                                          : "",
+                                      });
+                                      setIsEditModalOpen(true);
+                                    }}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {canDelete("socialJustice") && (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-red-600 hover:text-red-700"
                                       >
-                                        Delete
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>
+                                          Are you sure?
+                                        </AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          This action cannot be undone. This will
+                                          permanently delete the legal aid case.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>
+                                          Cancel
+                                        </AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() =>
+                                            handleDelete(service._id)
+                                          }
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
                               </div>
                             </TableCell>
                           </TableRow>
