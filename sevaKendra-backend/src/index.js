@@ -11,9 +11,15 @@ import { appConfig } from "./config/appConfig.js";
 
 const app = express();
 
-// Connect to database
-dbConnect().catch((err) => {
-  console.error("Failed to connect to database:", err);
+// Middleware: Ensure Database Connection for every request
+app.use(async (req, res, next) => {
+  try {
+    await dbConnect();
+    next();
+  } catch (error) {
+    console.error("Database connection failed in middleware:", error);
+    res.status(500).json({ error: "Service unavailable: Database connection failed" });
+  }
 });
 
 const whitelist = appConfig.whiteList.split(",");
@@ -67,6 +73,6 @@ app.use(errorHandler);
 const port = appConfig.port;
 
 app.listen(port, () => {
-  console.log("Server Running on " + `${port}`);
+  console.log(`Server Running on ${port}`);
   return true;
 });
