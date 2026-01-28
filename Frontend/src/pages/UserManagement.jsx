@@ -59,7 +59,7 @@ import {
 import Sidebar from "../components/Sidebar";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1";
+const API_URL = import.meta.env.VITE_API_URL || "https://seva-kendra-backend.vercel.app/api/v1";
 
 // Permission configurations
 const PERMISSION_MODULES = {
