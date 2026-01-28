@@ -53,9 +53,8 @@ import {
   Trash2,
   Eye,
   Menu,
-  Shield,
   UserPlus,
-  Key,
+  UserCog,
 } from "lucide-react";
 import Sidebar from "../components/Sidebar";
 import axios from "axios";
@@ -409,8 +408,9 @@ const UserManagement = () => {
                                 size="icon"
                                 onClick={() => openPermissionModal(user)}
                                 disabled={user.role === "admin"}
+                                title="Manage Permissions"
                               >
-                                <Shield className="h-4 w-4" />
+                                <UserCog className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
