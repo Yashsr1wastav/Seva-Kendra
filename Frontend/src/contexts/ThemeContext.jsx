@@ -10,7 +10,9 @@ export const ThemeProvider = ({ children }) => {
     try {
       const stored = localStorage.getItem("theme");
       if (stored) return stored;
-    } catch (e) {}
+    } catch (e) {
+      // Ignore localStorage read failures (private mode / restricted storage).
+    }
     if (typeof window !== "undefined" && window.matchMedia) {
       return window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
@@ -25,7 +27,9 @@ export const ThemeProvider = ({ children }) => {
     else root.classList.remove("dark");
     try {
       localStorage.setItem("theme", theme);
-    } catch (e) {}
+    } catch (e) {
+      // Ignore localStorage write failures.
+    }
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === "dark" ? "light" : "dark"));

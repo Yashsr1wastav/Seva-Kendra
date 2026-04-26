@@ -11,6 +11,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -49,6 +63,8 @@ import { Badge } from "@/components/ui/badge";
 import { TimeRangePicker } from "@/components/ui/time-range-picker";
 import {
   School,
+  Check,
+  ChevronsUpDown,
   Plus,
   Search,
   Filter,
@@ -61,8 +77,72 @@ import {
 import { schoolAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import { getWardOptions } from "../lib/formOptions";
+
+const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const selectedWard = options.find((ward) => ward.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-list`}
+          className="h-9 w-full justify-between bg-input px-3 text-left text-sm font-normal text-foreground"
+        >
+          {selectedWard ? selectedWard.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Type ward number..."
+            autoFocus
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <CommandList
+            id={`${id}-list`}
+            className="max-h-56"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>No ward found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((ward) => (
+                <CommandItem
+                  key={ward.value}
+                  value={`${ward.label} ${ward.numberValue}`}
+                  onSelect={() => {
+                    onChange(ward.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === ward.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {ward.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const Schools = () => {
+  const wardOptions = getWardOptions();
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [schools, setSchools] = useState([]);
@@ -97,7 +177,7 @@ const Schools = () => {
     projectResponsible: "",
     keyIssueIdentified: "",
     actionPlan: "",
-    statusOfActionPlanImplementation: "Not Started",
+    statusOfActionPlanImplementation: "Planned",
     progressReporting: {},
   });
 
@@ -181,7 +261,7 @@ const Schools = () => {
       projectResponsible: "",
       keyIssueIdentified: "",
       actionPlan: "",
-      statusOfActionPlanImplementation: "Not Started",
+      statusOfActionPlanImplementation: "Planned",
       progressReporting: {},
     });
     setSelectedSchool(null);
@@ -245,6 +325,24 @@ const Schools = () => {
               )}
             </div>
 
+            <Card>
+              <CardHeader>
+                <CardTitle>School Entry Guidelines</CardTitle>
+                <CardDescription>
+                  Follow these steps to keep school records complete and consistent.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                  <li>Use the official school code and full school name.</li>
+                  <li>Select the ward from the searchable ward dropdown.</li>
+                  <li>Enter principal contact as a valid 10-digit mobile number.</li>
+                  <li>Describe one clear issue and one actionable plan.</li>
+                  <li>Keep action plan status aligned to Planned, Ongoing, or Completed.</li>
+                </ul>
+              </CardContent>
+            </Card>
+
             {/* Search and Filters */}
             <Card>
               <CardHeader>
@@ -265,7 +363,7 @@ const Schools = () => {
                     />
                   </div>
                   <div>
-                    {/* <Select
+                    <Select
                       value={filters.wardNo}
                       onValueChange={(value) =>
                         setFilters({ ...filters, wardNo: value })
@@ -276,13 +374,13 @@ const Schools = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Wards</SelectItem>
-                        <SelectItem value="1">Ward 1</SelectItem>
-                        <SelectItem value="2">Ward 2</SelectItem>
-                        <SelectItem value="3">Ward 3</SelectItem>
-                        <SelectItem value="4">Ward 4</SelectItem>
-                        <SelectItem value="5">Ward 5</SelectItem>
+                        {wardOptions.map((ward) => (
+                          <SelectItem key={ward.value} value={ward.value}>
+                            {ward.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
-                    </Select> */}
+                    </Select>
                   </div>
                   <div>
                     {/* <Select
@@ -514,28 +612,15 @@ const Schools = () => {
                     </div>
                     <div>
                       <Label htmlFor="wardNo">Ward Number *</Label>
-                      <Select
+                      <WardCombobox
+                        id="wardNo"
                         value={formData.wardNo}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           setFormData({ ...formData, wardNo: value })
                         }
-                      >
-                        <SelectTrigger id="wardNo">
-                          <SelectValue placeholder="Select ward" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ward 1">Ward 1</SelectItem>
-                          <SelectItem value="Ward 2">Ward 2</SelectItem>
-                          <SelectItem value="Ward 3">Ward 3</SelectItem>
-                          <SelectItem value="Ward 4">Ward 4</SelectItem>
-                          <SelectItem value="Ward 5">Ward 5</SelectItem>
-                          <SelectItem value="Ward 6">Ward 6</SelectItem>
-                          <SelectItem value="Ward 7">Ward 7</SelectItem>
-                          <SelectItem value="Ward 8">Ward 8</SelectItem>
-                          <SelectItem value="Ward 9">Ward 9</SelectItem>
-                          <SelectItem value="Ward 10">Ward 10</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        options={wardOptions}
+                        placeholder="Select ward"
+                      />
                     </div>
                     <div className="md:col-span-2">
                       <Label htmlFor="schoolName">School Name *</Label>
@@ -738,17 +823,9 @@ const Schools = () => {
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Not Started">
-                            Not Started
-                          </SelectItem>
-                          <SelectItem value="In Progress">
-                            In Progress
-                          </SelectItem>
-                          <SelectItem value="Partially Completed">
-                            Partially Completed
-                          </SelectItem>
+                          <SelectItem value="Planned">Planned</SelectItem>
+                          <SelectItem value="Ongoing">Ongoing</SelectItem>
                           <SelectItem value="Completed">Completed</SelectItem>
-                          <SelectItem value="On Hold">On Hold</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -791,13 +868,14 @@ const Schools = () => {
                     </div>
                     <div>
                       <Label htmlFor="editWardNo">Ward Number *</Label>
-                      <Input
+                      <WardCombobox
                         id="editWardNo"
                         value={formData.wardNo}
-                        onChange={(e) =>
-                          setFormData({ ...formData, wardNo: e.target.value })
+                        onChange={(value) =>
+                          setFormData({ ...formData, wardNo: value })
                         }
-                        required
+                        options={wardOptions}
+                        placeholder="Select ward"
                       />
                     </div>
                     <div className="md:col-span-2">
@@ -1009,17 +1087,9 @@ const Schools = () => {
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Not Started">
-                            Not Started
-                          </SelectItem>
-                          <SelectItem value="In Progress">
-                            In Progress
-                          </SelectItem>
-                          <SelectItem value="Partially Completed">
-                            Partially Completed
-                          </SelectItem>
+                          <SelectItem value="Planned">Planned</SelectItem>
+                          <SelectItem value="Ongoing">Ongoing</SelectItem>
                           <SelectItem value="Completed">Completed</SelectItem>
-                          <SelectItem value="On Hold">On Hold</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

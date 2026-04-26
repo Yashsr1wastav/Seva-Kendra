@@ -109,6 +109,17 @@ const dropoutSchema = new mongoose.Schema(
       required: [true, "School name when dropout is required"],
       trim: true,
     },
+    schoolName: {
+      type: String,
+      trim: true,
+    },
+    enrolmentDate: {
+      type: Date,
+    },
+    schoolNameAtEnrolment: {
+      type: String,
+      trim: true,
+    },
     reasonForDropout: {
       type: String,
       required: [true, "Reason for dropout is required"],

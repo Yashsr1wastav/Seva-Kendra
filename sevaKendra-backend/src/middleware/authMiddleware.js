@@ -5,35 +5,34 @@ import User from "../modules/user/user.model.js";
 import { UserStatus } from "../modules/user/user.enum.js";
 
 const verifyTokenExists = async (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (token) {
-    const decoded = await decodeToken(req, res, next);
-    if (decoded) {
-      // Fetch user to include permissions
-      const user = await User.findById(decoded.userId);
+  const decoded = await decodeToken(req, res, next);
 
-      if (user) {
-        req.user = {
-          _id: user._id,
-          id: user._id,
-          email: user.email,
-          role: user.role,
-          permissions: user.permissions || [],
-        };
-      } else {
-        req.user = {
-          _id: decoded.userId,
-          id: decoded.userId,
-          email: decoded.email,
-          role: decoded.role,
-          permissions: [],
-        };
-      }
-      req.decodedToken = decoded;
-      return next();
-    }
+  if (!decoded) {
+    return;
   }
 
+  // Fetch user to include permissions
+  const user = await User.findById(decoded.userId);
+
+  if (user) {
+    req.user = {
+      _id: user._id,
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      permissions: user.permissions || [],
+    };
+  } else {
+    req.user = {
+      _id: decoded.userId,
+      id: decoded.userId,
+      email: decoded.email,
+      role: decoded.role,
+      permissions: [],
+    };
+  }
+
+  req.decodedToken = decoded;
   return next();
 };
 

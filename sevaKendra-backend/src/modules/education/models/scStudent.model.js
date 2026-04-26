@@ -34,7 +34,7 @@ const scStudentSchema = new mongoose.Schema(
   {
     householdCode: {
       type: String,
-      required: [true, "Household code is required"],
+      required: [true, "Beneficiary ID is required"],
       unique: true,
       trim: true,
     },
@@ -45,24 +45,65 @@ const scStudentSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      required: [true, "Gender is required"],
       enum: ["Boy", "Girl", "Other"],
+    },
+    dateOfBirth: {
+      type: Date,
     },
     age: {
       type: Number,
-      required: [true, "Age is required"],
       min: [0, "Age cannot be negative"],
       max: [120, "Age cannot exceed 120"],
     },
     contactNo: {
       type: String,
-      required: [true, "Contact number is required"],
       trim: true,
       match: [/^[6-9]\d{9}$/, "Please enter a valid mobile number"],
     },
     headOfHousehold: {
       type: String,
-      required: [true, "Head of household is required"],
+      trim: true,
+    },
+    fatherName: {
+      type: String,
+      trim: true,
+    },
+    motherName: {
+      type: String,
+      trim: true,
+    },
+    fatherOccupation: {
+      type: String,
+      trim: true,
+    },
+    motherOccupation: {
+      type: String,
+      trim: true,
+    },
+    classGrade: {
+      type: String,
+      enum: [
+        "Pre-Primary",
+        "Class 1",
+        "Class 2",
+        "Class 3",
+        "Class 4",
+        "Class 5",
+        "Class 6",
+        "Class 7",
+        "Class 8",
+        "Class 9",
+        "Class 10",
+        "Class 11",
+        "Class 12",
+      ],
+    },
+    studentStatus: {
+      type: String,
+      enum: ["Dropout", "School-Going", "Study Centre Attendee"],
+    },
+    schoolName: {
+      type: String,
       trim: true,
     },
     wardNo: {
@@ -72,7 +113,6 @@ const scStudentSchema = new mongoose.Schema(
     },
     habitation: {
       type: String,
-      required: [true, "Habitation is required"],
       trim: true,
     },
     projectResponsible: {
@@ -88,16 +128,13 @@ const scStudentSchema = new mongoose.Schema(
     // Reporting Details
     dateOfReporting: {
       type: Date,
-      required: [true, "Date of reporting is required"],
     },
     reportedBy: {
       type: String,
-      required: [true, "Reported by is required"],
       trim: true,
     },
     natureOfIssue: {
       type: String,
-      required: [true, "Nature of issue is required"],
       trim: true,
     },
     // Assessment Details
@@ -162,5 +199,19 @@ const scStudentSchema = new mongoose.Schema(
 scStudentSchema.index({ name: "text", habitation: "text" });
 scStudentSchema.index({ wardNo: 1 });
 scStudentSchema.index({ createdAt: -1 });
+
+scStudentSchema.pre("save", function (next) {
+  if (this.dateOfBirth && !this.age) {
+    const now = new Date();
+    const dob = new Date(this.dateOfBirth);
+    let age = now.getFullYear() - dob.getFullYear();
+    const monthDiff = now.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
+      age -= 1;
+    }
+    this.age = Math.max(age, 0);
+  }
+  next();
+});
 
 export default mongoose.model("SCStudent", scStudentSchema);

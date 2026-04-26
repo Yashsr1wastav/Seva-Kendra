@@ -64,12 +64,92 @@ import {
   XCircle,
   AlertCircle,
   Phone,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { legalAidServiceAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import { getWardOptions } from "../lib/formOptions";
+
+const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const selectedWard = options.find((ward) => ward.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-list`}
+          className="h-9 w-full justify-between bg-input px-3 text-left text-sm font-normal text-foreground"
+        >
+          {selectedWard ? selectedWard.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50 shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Type ward number..."
+            autoFocus
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <CommandList
+            id={`${id}-list`}
+            className="max-h-56"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>No ward found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((ward) => (
+                <CommandItem
+                  key={ward.value}
+                  value={`${ward.label} ${ward.numberValue}`}
+                  onSelect={() => {
+                    onChange(ward.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4 shrink-0",
+                      value === ward.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {ward.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const LegalAid = () => {
+  const wardOptions = getWardOptions();
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [legalAidServices, setLegalAidServices] = useState([]);
@@ -103,6 +183,8 @@ const LegalAid = () => {
     dateOfReporting: "",
     reportedBy: "",
     natureOfIssue: "",
+    status: "Pending",
+    priority: "Medium",
     actionPlan: "",
     progressReporting: {},
     photoDocumentation: [],
@@ -155,8 +237,10 @@ const LegalAid = () => {
         page: pagination.page,
         limit: pagination.limit,
         search: searchTerm,
-        ...filters,
       };
+
+      if (filters.status && filters.status !== "all") params.caseStatus = filters.status;
+      if (filters.caseType && filters.caseType !== "all") params.caseType = filters.caseType;
 
       const response = await legalAidServiceAPI.getAll(params);
 
@@ -246,6 +330,8 @@ const LegalAid = () => {
       dateOfReporting: "",
       reportedBy: "",
       natureOfIssue: "",
+      status: "Pending",
+      priority: "Medium",
       actionPlan: "",
       progressReporting: {},
       photoDocumentation: [],
@@ -380,7 +466,7 @@ const LegalAid = () => {
                       className="pl-10"
                     />
                   </div>
-                  {/* <Select
+                  <Select
                     value={filters.status}
                     onValueChange={(value) =>
                       setFilters({ ...filters, status: value })
@@ -415,7 +501,7 @@ const LegalAid = () => {
                         </SelectItem>
                       ))}
                     </SelectContent>
-                  </Select> */}
+                  </Select>
                 </div>
               </CardContent>
             </Card>
@@ -452,30 +538,30 @@ const LegalAid = () => {
                         legalAidServices.map((service) => (
                           <TableRow key={service._id}>
                             <TableCell className="font-medium">
-                              {service.caseId}
+                              {service.uniqueId || service.householdCode || "-"}
                             </TableCell>
                             <TableCell>
                               <div>
                                 <div className="font-medium">
-                                  {service.clientName}
+                                  {service.name}
                                 </div>
                                 <div className="text-sm text-muted-foreground flex items-center">
                                   <Phone className="mr-1 h-3 w-3" />
-                                  {service.contactNumber}
+                                  {service.contactNo || "-"}
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline">
-                                {service.caseType}
+                                {service.natureOfIssue}
                               </Badge>
                             </TableCell>
                             <TableCell>
                               <div className="flex items-center text-sm">
                                 <Calendar className="mr-1 h-3 w-3" />
-                                {service.dateRegistered
+                                {service.dateOfReporting
                                   ? new Date(
-                                      service.dateRegistered
+                                      service.dateOfReporting
                                     ).toLocaleDateString()
                                   : "N/A"}
                               </div>
@@ -483,20 +569,20 @@ const LegalAid = () => {
                             <TableCell>
                               <div className="flex items-center text-sm">
                                 <Calendar className="mr-1 h-3 w-3" />
-                                {service.nextHearingDate
+                                {service.followUpDate
                                   ? new Date(
-                                      service.nextHearingDate
+                                      service.followUpDate
                                     ).toLocaleDateString()
                                   : "Not scheduled"}
                               </div>
                             </TableCell>
                             <TableCell>
                               <Badge
-                                className={getStatusColor(service.caseStatus)}
+                                className={getStatusColor(service.status)}
                               >
-                                {getStatusIcon(service.caseStatus)}
+                                {getStatusIcon(service.status)}
                                 <span className="ml-1">
-                                  {service.caseStatus}
+                                  {service.status || "Pending"}
                                 </span>
                               </Badge>
                             </TableCell>
@@ -534,50 +620,18 @@ const LegalAid = () => {
                                         reportedBy: service.reportedBy || "",
                                         natureOfIssue:
                                           service.natureOfIssue || "",
-                                        issueDescription:
-                                          service.issueDescription || "",
                                         actionPlan: service.actionPlan || "",
-                                        caseId: service.caseId || "",
-                                        clientName: service.clientName || "",
+                                        status: service.status || "Pending",
+                                        priority: service.priority || "Medium",
                                         age: service.age || "",
                                         gender: service.gender || "",
-                                        contactNumber:
-                                          service.contactNumber || "",
-                                        address: service.address || "",
                                         wardNo: service.wardNo || "",
                                         habitation: service.habitation || "",
-                                        caseType: service.caseType || "",
-                                        caseDescription:
-                                          service.caseDescription || "",
-                                        dateRegistered: service.dateRegistered
-                                          ? service.dateRegistered.split("T")[0]
-                                          : "",
-                                        lawyerAssigned:
-                                          service.lawyerAssigned || "",
-                                        lawyerContact:
-                                          service.lawyerContact || "",
-                                        courtName: service.courtName || "",
-                                        caseNumber: service.caseNumber || "",
-                                        nextHearingDate: service.nextHearingDate
-                                          ? service.nextHearingDate.split("T")[0]
-                                          : "",
-                                        caseStatus: service.caseStatus || "Open",
-                                        documentsRequired:
-                                          service.documentsRequired || "",
-                                        documentsSubmitted:
-                                          service.documentsSubmitted || "",
-                                        legalAdviceGiven:
-                                          service.legalAdviceGiven || "",
-                                        serviceCharges:
-                                          service.serviceCharges || "",
-                                        paymentStatus:
-                                          service.paymentStatus || "Pending",
-                                        outcome: service.outcome || "",
                                         remarks: service.remarks || "",
                                         followUpRequired:
                                           service.followUpRequired || false,
-                                        nextFollowUpDate: service.nextFollowUpDate
-                                          ? service.nextFollowUpDate.split("T")[0]
+                                        followUpDate: service.followUpDate
+                                          ? service.followUpDate.split("T")[0]
                                           : "",
                                       });
                                       setIsEditModalOpen(true);
@@ -803,28 +857,15 @@ const LegalAid = () => {
                     </div>
                     <div>
                       <Label htmlFor="wardNo">Ward Number *</Label>
-                      <Select
+                      <WardCombobox
+                        id="wardNo"
                         value={formData.wardNo}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           setFormData({ ...formData, wardNo: value })
                         }
-                      >
-                        <SelectTrigger id="wardNo">
-                          <SelectValue placeholder="Select ward" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ward 1">Ward 1</SelectItem>
-                          <SelectItem value="Ward 2">Ward 2</SelectItem>
-                          <SelectItem value="Ward 3">Ward 3</SelectItem>
-                          <SelectItem value="Ward 4">Ward 4</SelectItem>
-                          <SelectItem value="Ward 5">Ward 5</SelectItem>
-                          <SelectItem value="Ward 6">Ward 6</SelectItem>
-                          <SelectItem value="Ward 7">Ward 7</SelectItem>
-                          <SelectItem value="Ward 8">Ward 8</SelectItem>
-                          <SelectItem value="Ward 9">Ward 9</SelectItem>
-                          <SelectItem value="Ward 10">Ward 10</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        options={wardOptions}
+                        placeholder="Select ward"
+                      />
                     </div>
                     <div>
                       <Label htmlFor="habitation">Habitation *</Label>
@@ -910,22 +951,25 @@ const LegalAid = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="md:col-span-2">
-                      <Label htmlFor="issueDescription">
-                        Issue Description *
-                      </Label>
-                      <Input
-                        id="issueDescription"
-                        value={formData.issueDescription}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            issueDescription: e.target.value,
-                          })
+                    <div>
+                      <Label htmlFor="status">Case Status</Label>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, status: value })
                         }
-                        placeholder="Enter issue description"
-                        required
-                      />
+                      >
+                        <SelectTrigger id="status">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="md:col-span-2">
                       <Label htmlFor="actionPlan">Action Plan *</Label>
@@ -943,60 +987,15 @@ const LegalAid = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="caseId">Case ID</Label>
+                      <Label htmlFor="followUpDate">Follow-up Date</Label>
                       <Input
-                        id="caseId"
-                        value={formData.caseId}
-                        onChange={(e) =>
-                          setFormData({ ...formData, caseId: e.target.value })
-                        }
-                        placeholder="Enter case ID"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="clientName">Client Name</Label>
-                      <Input
-                        id="clientName"
-                        value={formData.clientName}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            clientName: e.target.value,
-                          })
-                        }
-                        placeholder="Enter client name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="caseType">Case Type</Label>
-                      <Select
-                        value={formData.caseType}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, caseType: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select case type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {caseTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="dateRegistered">Registration Date</Label>
-                      <Input
-                        id="dateRegistered"
+                        id="followUpDate"
                         type="date"
-                        value={formData.dateRegistered}
+                        value={formData.followUpDate}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            dateRegistered: e.target.value,
+                            followUpDate: e.target.value,
                           })
                         }
                       />
@@ -1029,26 +1028,14 @@ const LegalAid = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="edit-caseId">Case ID *</Label>
-                      <Input
-                        id="edit-caseId"
-                        value={formData.caseId}
-                        onChange={(e) =>
-                          setFormData({ ...formData, caseId: e.target.value })
-                        }
-                        placeholder="Enter case ID"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="edit-caseStatus">Case Status</Label>
+                      <Label htmlFor="edit-status">Case Status</Label>
                       <Select
-                        value={formData.caseStatus}
+                        value={formData.status}
                         onValueChange={(value) =>
-                          setFormData({ ...formData, caseStatus: value })
+                          setFormData({ ...formData, status: value })
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="edit-status">
                           <SelectValue placeholder="Select case status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1059,6 +1046,17 @@ const LegalAid = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-followUpDate">Follow-up Date</Label>
+                      <Input
+                        id="edit-followUpDate"
+                        type="date"
+                        value={formData.followUpDate || ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, followUpDate: e.target.value })
+                        }
+                      />
                     </div>
                   </div>
 

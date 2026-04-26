@@ -311,6 +311,53 @@ class TrackingService {
       { $set: { isOverdue: true } }
     );
   }
+
+  async getUrgentCases(options = {}) {
+    const { status, assignedTo } = options;
+    const query = {
+      isActive: true,
+      priority: "Urgent",
+    };
+
+    if (status) {
+      query.status = status;
+    }
+
+    if (assignedTo) {
+      query.assignedTo = assignedTo;
+    }
+
+    return Tracking.find(query)
+      .populate("createdBy", "firstName lastName email")
+      .populate("assignedTo", "firstName lastName email")
+      .sort({ updatedAt: 1 });
+  }
+
+  async getUrgentCaseStaleAlerts(staleAfterDays = 2) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - Number(staleAfterDays || 2));
+
+    const records = await Tracking.find({
+      isActive: true,
+      priority: "Urgent",
+      status: { $in: ["Pending", "In Progress", "On Hold"] },
+      updatedAt: { $lt: cutoffDate },
+    })
+      .populate("assignedTo", "firstName lastName email")
+      .sort({ updatedAt: 1 });
+
+    return records.map((record) => ({
+      id: record._id,
+      title: record.title,
+      recordName: record.recordName,
+      assignedTo: record.assignedTo,
+      lastUpdated: record.updatedAt,
+      staleDays: Math.floor(
+        (Date.now() - new Date(record.updatedAt).getTime()) /
+          (1000 * 60 * 60 * 24)
+      ),
+    }));
+  }
 }
 
 export default new TrackingService();

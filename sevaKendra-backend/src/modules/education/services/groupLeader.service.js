@@ -93,9 +93,11 @@ class GroupLeaderService {
   // Create a new group leader
   async createGroupLeader(data, userId) {
     // Check if leader ID already exists
-    const existingLeader = await GroupLeader.findOne({ leaderId: data.leaderId });
-    if (existingLeader) {
-      throw new APIError("Leader ID already exists", 400);
+    if (data.leaderId) {
+      const existingLeader = await GroupLeader.findOne({ leaderId: data.leaderId });
+      if (existingLeader) {
+        throw new APIError("Leader ID already exists", 400);
+      }
     }
 
     const groupLeaderData = {

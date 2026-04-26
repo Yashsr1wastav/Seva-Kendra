@@ -738,86 +738,32 @@ export const workshopAndAwarenessAPI = workshopAPI;
 
 // User API calls
 export const userAPI = {
-  getAll: (params) => api.get("/users", { params }),
-  getById: (id) => api.get(`/users/${id}`),
-  create: (data) => api.post("/users", data),
-  update: (id, data) => api.put(`/users/${id}`, data),
-  delete: (id) => api.delete(`/users/${id}`),
+  getAll: (params) => api.get("/user", { params }),
+  getById: (id) => api.get(`/user/${id}`),
+  create: (data) => api.post("/user", data),
+  update: (id, data) => api.put(`/user/${id}`, data),
+  delete: (id) => api.delete(`/user/${id}`),
 };
 
 // Dashboard API calls with dummy data
 export const dashboardAPI = {
-  getOverview: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    return {
-      data: {
-        totalBeneficiaries: 125,
-        activeCases: 45,
-        pendingLegalAid: 23,
-        completedThisMonth: 18,
-        recentBeneficiaries: 8,
-        urgentCases: 7,
-      },
-    };
-  },
-  getChartData: async (type, period) => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    const chartData = {
-      cases: {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-        datasets: [
-          {
-            label: "Cases Filed",
-            data: [12, 19, 15, 25, 22, 18],
-            borderColor: "rgb(27, 60, 83)",
-            backgroundColor: "rgba(27, 60, 83, 0.1)",
-          },
-        ],
-      },
-      beneficiaries: {
-        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-        datasets: [
-          {
-            label: "New Beneficiaries",
-            data: [8, 12, 10, 15, 18, 14],
-            borderColor: "rgb(35, 76, 106)",
-            backgroundColor: "rgba(35, 76, 106, 0.1)",
-          },
-        ],
-      },
-    };
-    return { data: chartData[type] || chartData.cases };
-  },
-  getRecentActivity: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    return {
-      data: {
-        activities: [
-          {
-            _id: "1",
-            type: "case_created",
-            description: "New domestic violence case filed for Priya Sharma",
-            timestamp: "2024-01-15T10:30:00Z",
-            user: "Admin User",
-          },
-          {
-            _id: "2",
-            type: "beneficiary_added",
-            description: "New beneficiary Rajesh Kumar added to system",
-            timestamp: "2024-01-14T15:45:00Z",
-            user: "Admin User",
-          },
-          {
-            _id: "3",
-            type: "legal_aid_assigned",
-            description: "Legal aid case assigned to Advocate Sarah Johnson",
-            timestamp: "2024-01-13T09:15:00Z",
-            user: "Admin User",
-          },
-        ],
-      },
-    };
-  },
+  getOverview: (dateRange) => api.get("/analytics/overview", { params: { dateRange } }),
+  getChartData: (type, period) => api.get("/analytics/monthly-trends", { params: { type, period } }),
+  getRecentActivity: (limit) => api.get("/analytics/recent-activities", { params: { limit } }),
+  getCompleteDashboard: (dateRange) => api.get("/analytics/dashboard", { params: { dateRange } }),
+};
+
+// Analytics API - New real data endpoints
+export const analyticsAPI = {
+  getDashboardOverview: (dateRange) => api.get("/analytics/overview", { params: { dateRange } }),
+  getMonthlyTrends: (moduleType) => api.get("/analytics/monthly-trends", { params: { moduleType } }),
+  getGenderDistribution: () => api.get("/analytics/gender-distribution"),
+  getAgeDistribution: () => api.get("/analytics/age-distribution"),
+  getModuleDistribution: () => api.get("/analytics/module-distribution"),
+  getStatusDistribution: () => api.get("/analytics/status-distribution"),
+  getRecentActivities: (limit) => api.get("/analytics/recent-activities", { params: { limit } }),
+  getQuickInsights: () => api.get("/analytics/quick-insights"),
+  getCompleteDashboard: (dateRange) => api.get("/analytics/dashboard", { params: { dateRange } }),
 };
 
 // Reports API calls with dummy data
@@ -1518,6 +1464,11 @@ export const trackingAPI = {
 
   // Get tracking statistics
   getStats: (params) => api.get("/tracking/stats", { params }),
+
+  // Urgent case APIs
+  getUrgentCases: (params) => api.get("/tracking/urgent-cases", { params }),
+  getUrgentCaseAlerts: (staleAfterDays = 2) =>
+    api.get("/tracking/urgent-cases/alerts", { params: { staleAfterDays } }),
 
   // Get monthly update history for a specific record
   getHistory: (recordType, recordId) =>

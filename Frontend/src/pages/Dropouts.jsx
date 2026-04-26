@@ -11,6 +11,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -49,6 +63,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   UserMinus,
+  Check,
+  ChevronsUpDown,
   Plus,
   Search,
   Filter,
@@ -61,8 +77,72 @@ import {
 import { dropoutAPI, scStudentAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import { getWardOptions } from "../lib/formOptions";
+
+const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const selectedWard = options.find((ward) => ward.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-list`}
+          className="h-9 w-full justify-between bg-input px-3 text-left text-sm font-normal text-foreground"
+        >
+          {selectedWard ? selectedWard.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Type ward number..."
+            autoFocus
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <CommandList
+            id={`${id}-list`}
+            className="max-h-56"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>No ward found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((ward) => (
+                <CommandItem
+                  key={ward.value}
+                  value={`${ward.label} ${ward.numberValue}`}
+                  onSelect={() => {
+                    onChange(ward.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === ward.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {ward.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const Dropouts = () => {
+  const wardOptions = getWardOptions();
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dropouts, setDropouts] = useState([]);
@@ -99,6 +179,8 @@ const Dropouts = () => {
     dateOfReporting: "",
     reportedBy: "",
     yearOfDropout: "",
+    enrolmentDate: "",
+    schoolNameAtEnrolment: "",
     educationLevelWhenDropout: "",
     schoolNameWhenDropout: "",
     reasonForDropout: "",
@@ -206,12 +288,17 @@ const Dropouts = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...formData,
+        schoolName: formData.schoolNameWhenDropout || "",
+      };
+
       if (selectedDropout) {
-        await dropoutAPI.update(selectedDropout._id, formData);
+        await dropoutAPI.update(selectedDropout._id, payload);
         toast.success("Dropout record updated successfully");
         setIsEditModalOpen(false);
       } else {
-        await dropoutAPI.create(formData);
+        await dropoutAPI.create(payload);
         toast.success("Dropout record created successfully");
         setIsCreateModalOpen(false);
       }
@@ -249,6 +336,8 @@ const Dropouts = () => {
       dateOfReporting: "",
       reportedBy: "",
       yearOfDropout: "",
+      enrolmentDate: "",
+      schoolNameAtEnrolment: "",
       educationLevelWhenDropout: "",
       schoolNameWhenDropout: "",
       reasonForDropout: "",
@@ -281,6 +370,9 @@ const Dropouts = () => {
     setSelectedDropout(dropout);
     setFormData({
       ...dropout,
+      enrolmentDate: dropout.enrolmentDate
+        ? new Date(dropout.enrolmentDate).toISOString().split("T")[0]
+        : "",
       dateOfReporting: dropout.dateOfReporting
         ? new Date(dropout.dateOfReporting).toISOString().split("T")[0]
         : "",
@@ -602,7 +694,7 @@ const Dropouts = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="gender">Gender *</Label>
+                      <Label htmlFor="gender">Gender</Label>
                       <Select
                         value={formData.gender}
                         onValueChange={(value) =>
@@ -620,7 +712,7 @@ const Dropouts = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="age">Age *</Label>
+                      <Label htmlFor="age">Age</Label>
                       <Input
                         id="age"
                         type="number"
@@ -628,11 +720,10 @@ const Dropouts = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, age: e.target.value })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="contactNo">Contact Number *</Label>
+                      <Label htmlFor="contactNo">Contact Number</Label>
                       <Input
                         id="contactNo"
                         value={formData.contactNo}
@@ -642,12 +733,11 @@ const Dropouts = () => {
                             contactNo: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="headOfHousehold">
-                        Head of Household *
+                        Head of Household
                       </Label>
                       <Input
                         id="headOfHousehold"
@@ -658,36 +748,22 @@ const Dropouts = () => {
                             headOfHousehold: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="wardNo">Ward Number *</Label>
-                      <Select
+                      <WardCombobox
+                        id="wardNo"
                         value={formData.wardNo}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           setFormData({ ...formData, wardNo: value })
                         }
-                      >
-                        <SelectTrigger id="wardNo">
-                          <SelectValue placeholder="Select ward" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ward 1">Ward 1</SelectItem>
-                          <SelectItem value="Ward 2">Ward 2</SelectItem>
-                          <SelectItem value="Ward 3">Ward 3</SelectItem>
-                          <SelectItem value="Ward 4">Ward 4</SelectItem>
-                          <SelectItem value="Ward 5">Ward 5</SelectItem>
-                          <SelectItem value="Ward 6">Ward 6</SelectItem>
-                          <SelectItem value="Ward 7">Ward 7</SelectItem>
-                          <SelectItem value="Ward 8">Ward 8</SelectItem>
-                          <SelectItem value="Ward 9">Ward 9</SelectItem>
-                          <SelectItem value="Ward 10">Ward 10</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        options={wardOptions}
+                        placeholder="Select ward"
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="habitation">Habitation *</Label>
+                      <Label htmlFor="habitation">Habitation</Label>
                       <Input
                         id="habitation"
                         value={formData.habitation}
@@ -697,7 +773,6 @@ const Dropouts = () => {
                             habitation: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
@@ -717,13 +792,12 @@ const Dropouts = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="category">Category *</Label>
+                      <Label htmlFor="category">Category</Label>
                       <Select
                         value={formData.category}
                         onValueChange={(value) =>
                           setFormData({ ...formData, category: value })
                         }
-                        required
                       >
                         <SelectTrigger id="category">
                           <SelectValue placeholder="Select category" />
@@ -740,7 +814,7 @@ const Dropouts = () => {
                     </div>
                     <div>
                       <Label htmlFor="dateOfReporting">
-                        Date of Reporting *
+                        Date of Reporting
                       </Label>
                       <Input
                         id="dateOfReporting"
@@ -752,11 +826,10 @@ const Dropouts = () => {
                             dateOfReporting: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="reportedBy">Reported By *</Label>
+                      <Label htmlFor="reportedBy">Reported By</Label>
                       <Input
                         id="reportedBy"
                         value={formData.reportedBy}
@@ -766,11 +839,10 @@ const Dropouts = () => {
                             reportedBy: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="yearOfDropout">Year of Dropout *</Label>
+                      <Label htmlFor="yearOfDropout">Year of Dropout</Label>
                       <Input
                         id="yearOfDropout"
                         type="number"
@@ -782,12 +854,40 @@ const Dropouts = () => {
                             yearOfDropout: e.target.value,
                           })
                         }
-                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="enrolmentDate">Enrolment Date</Label>
+                      <Input
+                        id="enrolmentDate"
+                        type="date"
+                        value={formData.enrolmentDate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            enrolmentDate: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="schoolNameAtEnrolment">
+                        School Name at Enrolment
+                      </Label>
+                      <Input
+                        id="schoolNameAtEnrolment"
+                        value={formData.schoolNameAtEnrolment}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            schoolNameAtEnrolment: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
                       <Label htmlFor="educationLevelWhenDropout">
-                        Education Level When Dropout *
+                        Education Level When Dropout
                       </Label>
                       <Input
                         id="educationLevelWhenDropout"
@@ -798,12 +898,11 @@ const Dropouts = () => {
                             educationLevelWhenDropout: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="schoolNameWhenDropout">
-                        School Name When Dropout *
+                        School Name When Dropout
                       </Label>
                       <Input
                         id="schoolNameWhenDropout"
@@ -814,7 +913,6 @@ const Dropouts = () => {
                             schoolNameWhenDropout: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
@@ -844,7 +942,7 @@ const Dropouts = () => {
                     </div>
                     <div className="md:col-span-2">
                       <Label htmlFor="reasonForDropout">
-                        Reason for Dropout *
+                        Reason for Dropout
                       </Label>
                       <Textarea
                         id="reasonForDropout"
@@ -855,7 +953,6 @@ const Dropouts = () => {
                             reasonForDropout: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                   </div>
@@ -946,7 +1043,7 @@ const Dropouts = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="editGender">Gender *</Label>
+                      <Label htmlFor="editGender">Gender</Label>
                       <Select
                         value={formData.gender}
                         onValueChange={(value) =>
@@ -964,7 +1061,7 @@ const Dropouts = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="editAge">Age *</Label>
+                      <Label htmlFor="editAge">Age</Label>
                       <Input
                         id="editAge"
                         type="number"
@@ -972,11 +1069,10 @@ const Dropouts = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, age: e.target.value })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="editContactNo">Contact Number *</Label>
+                      <Label htmlFor="editContactNo">Contact Number</Label>
                       <Input
                         id="editContactNo"
                         value={formData.contactNo}
@@ -986,12 +1082,11 @@ const Dropouts = () => {
                             contactNo: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="editHeadOfHousehold">
-                        Head of Household *
+                        Head of Household
                       </Label>
                       <Input
                         id="editHeadOfHousehold"
@@ -1002,22 +1097,22 @@ const Dropouts = () => {
                             headOfHousehold: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="editWardNo">Ward Number *</Label>
-                      <Input
+                      <WardCombobox
                         id="editWardNo"
                         value={formData.wardNo}
-                        onChange={(e) =>
-                          setFormData({ ...formData, wardNo: e.target.value })
+                        onChange={(value) =>
+                          setFormData({ ...formData, wardNo: value })
                         }
-                        required
+                        options={wardOptions}
+                        placeholder="Select ward"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="editHabitation">Habitation *</Label>
+                      <Label htmlFor="editHabitation">Habitation</Label>
                       <Input
                         id="editHabitation"
                         value={formData.habitation}
@@ -1027,7 +1122,6 @@ const Dropouts = () => {
                             habitation: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
@@ -1047,13 +1141,12 @@ const Dropouts = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="editCategory">Category *</Label>
+                      <Label htmlFor="editCategory">Category</Label>
                       <Select
                         value={formData.category}
                         onValueChange={(value) =>
                           setFormData({ ...formData, category: value })
                         }
-                        required
                       >
                         <SelectTrigger id="editCategory">
                           <SelectValue placeholder="Select category" />
@@ -1070,7 +1163,7 @@ const Dropouts = () => {
                     </div>
                     <div>
                       <Label htmlFor="editDateOfReporting">
-                        Date of Reporting *
+                        Date of Reporting
                       </Label>
                       <Input
                         id="editDateOfReporting"
@@ -1082,11 +1175,10 @@ const Dropouts = () => {
                             dateOfReporting: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="editReportedBy">Reported By *</Label>
+                      <Label htmlFor="editReportedBy">Reported By</Label>
                       <Input
                         id="editReportedBy"
                         value={formData.reportedBy}
@@ -1096,12 +1188,11 @@ const Dropouts = () => {
                             reportedBy: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="editYearOfDropout">
-                        Year of Dropout *
+                        Year of Dropout
                       </Label>
                       <Input
                         id="editYearOfDropout"
@@ -1114,12 +1205,40 @@ const Dropouts = () => {
                             yearOfDropout: e.target.value,
                           })
                         }
-                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editEnrolmentDate">Enrolment Date</Label>
+                      <Input
+                        id="editEnrolmentDate"
+                        type="date"
+                        value={formData.enrolmentDate || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            enrolmentDate: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editSchoolNameAtEnrolment">
+                        School Name at Enrolment
+                      </Label>
+                      <Input
+                        id="editSchoolNameAtEnrolment"
+                        value={formData.schoolNameAtEnrolment || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            schoolNameAtEnrolment: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
                       <Label htmlFor="editEducationLevelWhenDropout">
-                        Education Level When Dropout *
+                        Education Level When Dropout
                       </Label>
                       <Input
                         id="editEducationLevelWhenDropout"
@@ -1130,12 +1249,11 @@ const Dropouts = () => {
                             educationLevelWhenDropout: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="editSchoolNameWhenDropout">
-                        School Name When Dropout *
+                        School Name When Dropout
                       </Label>
                       <Input
                         id="editSchoolNameWhenDropout"
@@ -1146,7 +1264,6 @@ const Dropouts = () => {
                             schoolNameWhenDropout: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
@@ -1176,7 +1293,7 @@ const Dropouts = () => {
                     </div>
                     <div className="md:col-span-2">
                       <Label htmlFor="editReasonForDropout">
-                        Reason for Dropout *
+                        Reason for Dropout
                       </Label>
                       <Textarea
                         id="editReasonForDropout"
@@ -1187,7 +1304,6 @@ const Dropouts = () => {
                             reasonForDropout: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                   </div>
@@ -1323,6 +1439,26 @@ const Dropouts = () => {
                           </Label>
                           <p>
                             {selectedDropout.schoolNameWhenDropout || "N/A"}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="font-semibold">
+                            School Name at Enrolment
+                          </Label>
+                          <p>
+                            {selectedDropout.schoolNameAtEnrolment || "N/A"}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="font-semibold">
+                            Enrolment Date
+                          </Label>
+                          <p>
+                            {selectedDropout.enrolmentDate
+                              ? new Date(
+                                  selectedDropout.enrolmentDate
+                                ).toLocaleDateString()
+                              : "N/A"}
                           </p>
                         </div>
                       </div>

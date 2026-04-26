@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -74,11 +75,22 @@ const Teachers = () => {
     lastName: "",
     email: "",
     phoneNumber: "",
-    specialization: "",
-    experience: "",
+    specialization: [],
+    experienceYears: "",
+    experienceDomain: "",
     qualifications: "",
     status: "Active",
   });
+
+  const getSpecializationList = (specialization) => {
+    if (Array.isArray(specialization)) {
+      return specialization;
+    }
+    if (typeof specialization === "string" && specialization.trim()) {
+      return [specialization.trim()];
+    }
+    return [];
+  };
 
   // Fetch teachers
   const fetchTeachers = async () => {
@@ -111,12 +123,15 @@ const Teachers = () => {
     try {
       const submitData = {
         ...formData,
-        experience: parseInt(formData.experience) || 0,
-        qualifications: formData.qualifications
-          .split(",")
-          .map((q) => q.trim())
-          .filter((q) => q),
+        specialization: getSpecializationList(formData.specialization),
+        experience: parseInt(formData.experienceYears) || 0,
       };
+
+      if (!submitData.teacherId?.trim()) {
+        delete submitData.teacherId;
+      } else {
+        submitData.teacherId = submitData.teacherId.trim();
+      }
 
       if (selectedTeacher) {
         await teacherAPI.update(selectedTeacher._id, submitData);
@@ -154,8 +169,9 @@ const Teachers = () => {
       lastName: "",
       email: "",
       phoneNumber: "",
-      specialization: "",
-      experience: "",
+      specialization: [],
+      experienceYears: "",
+      experienceDomain: "",
       qualifications: "",
       status: "Active",
     });
@@ -173,9 +189,10 @@ const Teachers = () => {
       lastName: teacher.lastName,
       email: teacher.email,
       phoneNumber: teacher.phoneNumber,
-      specialization: teacher.specialization || "",
-      experience: teacher.experience?.toString() || "",
-      qualifications: teacher.qualifications?.join(", ") || "",
+      specialization: getSpecializationList(teacher.specialization),
+      experienceYears: teacher.experience?.toString() || "",
+      experienceDomain: "",
+      qualifications: teacher.qualifications || "Other",
       status: teacher.status,
     });
     setIsEditModalOpen(true);
@@ -260,7 +277,7 @@ const Teachers = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="teacherId">Teacher ID *</Label>
+                      <Label htmlFor="teacherId">Teacher ID</Label>
                       <Input
                         id="teacherId"
                         value={formData.teacherId}
@@ -270,7 +287,6 @@ const Teachers = () => {
                             teacherId: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
@@ -302,7 +318,7 @@ const Teachers = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="email">Email *</Label>
+                      <Label htmlFor="email">Email</Label>
                       <Input
                         id="email"
                         type="email"
@@ -313,11 +329,10 @@ const Teachers = () => {
                             email: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="phoneNumber">Phone Number *</Label>
+                      <Label htmlFor="phoneNumber">Phone Number</Label>
                       <Input
                         id="phoneNumber"
                         value={formData.phoneNumber}
@@ -328,45 +343,72 @@ const Teachers = () => {
                           })
                         }
                         placeholder="10 digit number"
-                        required
                       />
                     </div>
-                    <div>
+                    <div className="md:col-span-2">
                       <Label htmlFor="specialization">Specialization</Label>
-                      <Select
-                        value={formData.specialization}
-                        onValueChange={(value) =>
-                          setFormData({
-                            ...formData,
-                            specialization: value,
-                          })
-                        }
-                      >
-                        <SelectTrigger id="specialization">
-                          <SelectValue placeholder="Select specialization" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {specializations.map((spec) => (
-                            <SelectItem key={spec} value={spec}>
-                              {spec}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 mt-2 p-3 border rounded-md">
+                        {specializations.map((spec) => {
+                          const checked = formData.specialization.includes(spec);
+                          return (
+                            <div key={spec} className="flex items-start gap-2 min-w-0">
+                              <Checkbox
+                                id={`specialization-${spec}`}
+                                checked={checked}
+                                onCheckedChange={(isChecked) => {
+                                  if (isChecked) {
+                                    setFormData({
+                                      ...formData,
+                                      specialization: [...formData.specialization, spec],
+                                    });
+                                  } else {
+                                    setFormData({
+                                      ...formData,
+                                      specialization: formData.specialization.filter(
+                                        (item) => item !== spec
+                                      ),
+                                    });
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`specialization-${spec}`}
+                                className="text-sm leading-5 break-words cursor-pointer"
+                              >
+                                {spec}
+                              </label>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div>
-                      <Label htmlFor="experience">Experience (years)</Label>
+                      <Label htmlFor="experienceYears">Experience (years)</Label>
                       <Input
-                        id="experience"
+                        id="experienceYears"
                         type="number"
-                        value={formData.experience}
+                        value={formData.experienceYears}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            experience: e.target.value,
+                            experienceYears: e.target.value,
                           })
                         }
                         min="0"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="experienceDomain">Experience Domain</Label>
+                      <Input
+                        id="experienceDomain"
+                        value={formData.experienceDomain}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            experienceDomain: e.target.value,
+                          })
+                        }
+                        placeholder="Optional domain"
                       />
                     </div>
                     <div>
@@ -394,20 +436,30 @@ const Teachers = () => {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="qualifications">
-                      Qualifications (comma separated)
-                    </Label>
-                    <Input
-                      id="qualifications"
+                    <Label htmlFor="qualifications">Qualification</Label>
+                    <Select
                       value={formData.qualifications}
-                      onChange={(e) =>
+                      onValueChange={(value) =>
                         setFormData({
                           ...formData,
-                          qualifications: e.target.value,
+                          qualifications: value,
                         })
                       }
-                      placeholder="e.g., B.Tech, M.Tech, Diploma"
-                    />
+                    >
+                      <SelectTrigger id="qualifications">
+                        <SelectValue placeholder="Select qualification" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Illiterate">Illiterate</SelectItem>
+                        <SelectItem value="Neo-literate">Neo-literate</SelectItem>
+                        <SelectItem value="Primary">Primary</SelectItem>
+                        <SelectItem value="Secondary">Secondary</SelectItem>
+                        <SelectItem value="Higher Secondary">Higher Secondary</SelectItem>
+                        <SelectItem value="Graduate">Graduate</SelectItem>
+                        <SelectItem value="Post-Graduate">Post-Graduate</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <DialogFooter>
@@ -475,7 +527,7 @@ const Teachers = () => {
                           <TableCell>{teacher.phoneNumber}</TableCell>
                           <TableCell>
                             <Badge variant="outline">
-                              {teacher.specialization || "-"}
+                              {getSpecializationList(teacher.specialization).join(", ") || "-"}
                             </Badge>
                           </TableCell>
                           <TableCell>{teacher.experience || 0} years</TableCell>
@@ -604,7 +656,7 @@ const Teachers = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="editTeacherId">Teacher ID *</Label>
+                <Label htmlFor="editTeacherId">Teacher ID</Label>
                 <Input
                   id="editTeacherId"
                   value={formData.teacherId}
@@ -614,8 +666,6 @@ const Teachers = () => {
                       teacherId: e.target.value,
                     })
                   }
-                  required
-                  disabled
                 />
               </div>
               <div>
@@ -647,7 +697,7 @@ const Teachers = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="editEmail">Email *</Label>
+                <Label htmlFor="editEmail">Email</Label>
                 <Input
                   id="editEmail"
                   type="email"
@@ -658,11 +708,10 @@ const Teachers = () => {
                       email: e.target.value,
                     })
                   }
-                  required
                 />
               </div>
               <div>
-                <Label htmlFor="editPhoneNumber">Phone Number *</Label>
+                <Label htmlFor="editPhoneNumber">Phone Number</Label>
                 <Input
                   id="editPhoneNumber"
                   value={formData.phoneNumber}
@@ -672,42 +721,55 @@ const Teachers = () => {
                       phoneNumber: e.target.value,
                     })
                   }
-                  required
                 />
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <Label htmlFor="editSpecialization">Specialization</Label>
-                <Select
-                  value={formData.specialization}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      specialization: value,
-                    })
-                  }
-                >
-                  <SelectTrigger id="editSpecialization">
-                    <SelectValue placeholder="Select specialization" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {specializations.map((spec) => (
-                      <SelectItem key={spec} value={spec}>
-                        {spec}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3 mt-2 p-3 border rounded-md">
+                  {specializations.map((spec) => {
+                    const checked = formData.specialization.includes(spec);
+                    return (
+                      <div key={spec} className="flex items-start gap-2 min-w-0">
+                        <Checkbox
+                          id={`edit-specialization-${spec}`}
+                          checked={checked}
+                          onCheckedChange={(isChecked) => {
+                            if (isChecked) {
+                              setFormData({
+                                ...formData,
+                                specialization: [...formData.specialization, spec],
+                              });
+                            } else {
+                              setFormData({
+                                ...formData,
+                                specialization: formData.specialization.filter(
+                                  (item) => item !== spec
+                                ),
+                              });
+                            }
+                          }}
+                        />
+                        <label
+                          htmlFor={`edit-specialization-${spec}`}
+                          className="text-sm leading-5 break-words cursor-pointer"
+                        >
+                          {spec}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
               <div>
                 <Label htmlFor="editExperience">Experience (years)</Label>
                 <Input
                   id="editExperience"
                   type="number"
-                  value={formData.experience}
+                  value={formData.experienceYears}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      experience: e.target.value,
+                      experienceYears: e.target.value,
                     })
                   }
                   min="0"
@@ -738,20 +800,30 @@ const Teachers = () => {
               </div>
             </div>
             <div>
-              <Label htmlFor="editQualifications">
-                Qualifications (comma separated)
-              </Label>
-              <Input
-                id="editQualifications"
+              <Label htmlFor="editQualifications">Qualification</Label>
+              <Select
                 value={formData.qualifications}
-                onChange={(e) =>
+                onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    qualifications: e.target.value,
+                    qualifications: value,
                   })
                 }
-                placeholder="e.g., B.Tech, M.Tech, Diploma"
-              />
+              >
+                <SelectTrigger id="editQualifications">
+                  <SelectValue placeholder="Select qualification" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Illiterate">Illiterate</SelectItem>
+                  <SelectItem value="Neo-literate">Neo-literate</SelectItem>
+                  <SelectItem value="Primary">Primary</SelectItem>
+                  <SelectItem value="Secondary">Secondary</SelectItem>
+                  <SelectItem value="Higher Secondary">Higher Secondary</SelectItem>
+                  <SelectItem value="Graduate">Graduate</SelectItem>
+                  <SelectItem value="Post-Graduate">Post-Graduate</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <DialogFooter>
@@ -805,7 +877,7 @@ const Teachers = () => {
                     Specialization
                   </p>
                   <p className="text-lg">
-                    {selectedTeacher.specialization || "-"}
+                    {getSpecializationList(selectedTeacher.specialization).join(", ") || "-"}
                   </p>
                 </div>
                 <div>

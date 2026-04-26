@@ -11,6 +11,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -57,6 +71,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TimeRangePicker } from "@/components/ui/time-range-picker";
 import {
   Building2,
+  Check,
+  ChevronsUpDown,
   Plus,
   Search,
   Filter,
@@ -70,8 +86,72 @@ import {
 import { studyCenterAPI, teacherAPI, groupLeaderAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import { getWardOptions } from "../lib/formOptions";
+
+const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const selectedWard = options.find((ward) => ward.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-list`}
+          className="h-9 w-full justify-between bg-input px-3 text-left text-sm font-normal text-foreground"
+        >
+          {selectedWard ? selectedWard.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Type ward number..."
+            autoFocus
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <CommandList
+            id={`${id}-list`}
+            className="max-h-56"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>No ward found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((ward) => (
+                <CommandItem
+                  key={ward.value}
+                  value={`${ward.label} ${ward.numberValue}`}
+                  onSelect={() => {
+                    onChange(ward.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === ward.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {ward.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const StudyCenters = () => {
+  const wardOptions = getWardOptions();
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [studyCenters, setStudyCenters] = useState([]);
@@ -94,6 +174,8 @@ const StudyCenters = () => {
   });
   const [teachers, setTeachers] = useState([]);
   const [groupLeaders, setGroupLeaders] = useState([]);
+  const [manualGroupLeader, setManualGroupLeader] = useState("");
+  const [manualTeachers, setManualTeachers] = useState({});
   const [selectedCenter, setSelectedCenter] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -121,6 +203,74 @@ const StudyCenters = () => {
     },
     progressReporting: {},
   });
+
+  const splitName = (fullName) => {
+    const cleanedName = (fullName || "").trim().replace(/\s+/g, " ");
+    if (!cleanedName) {
+      return { firstName: "", lastName: "" };
+    }
+
+    const parts = cleanedName.split(" ");
+    const firstName = parts.shift();
+    const lastName = parts.join(" ") || "Manual";
+    return { firstName, lastName };
+  };
+
+  const uniqueSuffix = () => `${Date.now()}${Math.floor(Math.random() * 900 + 100)}`;
+
+  const normalizeToken = (value) =>
+    (value || "manual")
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, "")
+      .slice(0, 16) || "manual";
+
+  const buildEmailAddress = (namePart) =>
+    `${normalizeToken(namePart)}.${uniqueSuffix()}@manualentry.com`;
+
+  const buildPhoneNumber = () => {
+    const suffix = uniqueSuffix().slice(-9);
+    return `9${suffix}`;
+  };
+
+  const createGroupLeaderFromManual = async (name) => {
+    const { firstName, lastName } = splitName(name);
+    const baseName = normalizeToken(firstName);
+    const payload = {
+      leaderId: `GL-${uniqueSuffix()}`,
+      firstName,
+      lastName,
+      phoneNumber: buildPhoneNumber(),
+      qualifications: "Other",
+      status: "Active",
+      experience: {
+        years: 0,
+        domain: "",
+      },
+      email: buildEmailAddress(baseName),
+    };
+
+    const response = await groupLeaderAPI.create(payload);
+    return response?.data?.data?._id || response?.data?._id;
+  };
+
+  const createTeacherFromManual = async (name) => {
+    const { firstName, lastName } = splitName(name);
+    const baseName = normalizeToken(firstName);
+    const payload = {
+      teacherId: `TC-${uniqueSuffix()}`,
+      firstName,
+      lastName,
+      email: buildEmailAddress(baseName),
+      phoneNumber: buildPhoneNumber(),
+      specialization: ["General"],
+      experience: 0,
+      qualifications: [],
+      status: "Active",
+    };
+
+    const response = await teacherAPI.create(payload);
+    return response?.data?.data?._id || response?.data?._id;
+  };
 
   // Fetch study centers
   const fetchStudyCenters = async () => {
@@ -186,21 +336,83 @@ const StudyCenters = () => {
     fetchGroupLeaders();
   }, []);
 
+  useEffect(() => {
+    if (isCreateModalOpen || isEditModalOpen) {
+      fetchTeachers();
+      fetchGroupLeaders();
+    }
+  }, [isCreateModalOpen, isEditModalOpen]);
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (!formData.timing?.trim()) {
+        toast.error("Timing is required");
+        return;
+      }
+
+      let resolvedGroupLeader = formData.groupLeader;
+      const manualLeaderName = manualGroupLeader.trim();
+
+      if (manualLeaderName) {
+        const existingLeader = groupLeaders.find(
+          (leader) => leader.label.toLowerCase() === manualLeaderName.toLowerCase()
+        );
+        resolvedGroupLeader = existingLeader?.id || (await createGroupLeaderFromManual(manualLeaderName));
+      }
+
+      if (!resolvedGroupLeader) {
+        toast.error("Select or enter a group leader");
+        return;
+      }
+
+      const resolvedTeachers = [];
+      for (let index = 0; index < formData.teachers.length; index += 1) {
+        const selectedTeacherId = formData.teachers[index];
+        const manualTeacherName = (manualTeachers[index] || "").trim();
+
+        if (manualTeacherName) {
+          const existingTeacher = teachers.find(
+            (teacher) =>
+              `${teacher.firstName} ${teacher.lastName}`.toLowerCase() ===
+              manualTeacherName.toLowerCase()
+          );
+          const teacherId =
+            existingTeacher?.id || (await createTeacherFromManual(manualTeacherName));
+          resolvedTeachers.push(teacherId);
+          continue;
+        }
+
+        resolvedTeachers.push(selectedTeacherId);
+      }
+
+      const missingTeacherValue = resolvedTeachers.some((teacherId) => !teacherId);
+
+      if (missingTeacherValue) {
+        toast.error("Each teacher row needs a selection or manual name");
+        return;
+      }
+
+      const submitData = {
+        ...formData,
+        groupLeader: resolvedGroupLeader,
+        teachers: resolvedTeachers,
+      };
+
       if (selectedCenter) {
-        await studyCenterAPI.update(selectedCenter._id, formData);
+        await studyCenterAPI.update(selectedCenter._id, submitData);
         toast.success("Study center updated successfully");
         setIsEditModalOpen(false);
       } else {
-        await studyCenterAPI.create(formData);
+        await studyCenterAPI.create(submitData);
         toast.success("Study center created successfully");
         setIsCreateModalOpen(false);
       }
 
       fetchStudyCenters();
+      fetchTeachers();
+      fetchGroupLeaders();
       resetForm();
     } catch (error) {
       toast.error(error.response?.data?.message || "An error occurred");
@@ -246,6 +458,8 @@ const StudyCenters = () => {
     setSelectedCenter(null);
     setIsCreateModalOpen(false);
     setIsEditModalOpen(false);
+    setManualGroupLeader("");
+    setManualTeachers({});
   };
 
   // Open edit modal
@@ -265,6 +479,8 @@ const StudyCenters = () => {
       },
       teachers: center.teachers || [],
     });
+    setManualGroupLeader("");
+    setManualTeachers({});
     setIsEditModalOpen(true);
   };
 
@@ -286,10 +502,23 @@ const StudyCenters = () => {
   const removeTeacherField = (index) => {
     if (formData.teachers.length > 0) {
       const newTeachers = formData.teachers.filter((_, i) => i !== index);
+      const nextManualTeachers = {};
+
+      Object.entries(manualTeachers).forEach(([key, value]) => {
+        const keyIndex = Number(key);
+        if (keyIndex < index) {
+          nextManualTeachers[keyIndex] = value;
+        }
+        if (keyIndex > index) {
+          nextManualTeachers[keyIndex - 1] = value;
+        }
+      });
+
       setFormData({
         ...formData,
         teachers: newTeachers,
       });
+      setManualTeachers(nextManualTeachers);
     }
   };
 
@@ -674,19 +903,21 @@ const StudyCenters = () => {
                                 <AlertDialog>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <AlertDialogTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          aria-label="Delete Center"
-                                          className="text-destructive hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30"
-                                        >
-                                          <Trash2
-                                            className="h-4 w-4"
-                                            aria-hidden="true"
-                                          />
-                                        </Button>
-                                      </AlertDialogTrigger>
+                                      <span>
+                                        <AlertDialogTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            aria-label="Delete Center"
+                                            className="text-destructive hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/30"
+                                          >
+                                            <Trash2
+                                              className="h-4 w-4"
+                                              aria-hidden="true"
+                                            />
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                      </span>
                                     </TooltipTrigger>
                                     <TooltipContent>Delete Center</TooltipContent>
                                   </Tooltip>
@@ -921,34 +1152,15 @@ const StudyCenters = () => {
                     </div>
                     <div>
                       <Label htmlFor="wardNo">Ward No *</Label>
-                      <Select
+                      <WardCombobox
+                        id="wardNo"
                         value={formData.wardNo}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           setFormData({ ...formData, wardNo: value })
                         }
-                        required
-                      >
-                        <SelectTrigger id="wardNo">
-                          <SelectValue placeholder="Select ward" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ward 1">Ward 1</SelectItem>
-                          <SelectItem value="Ward 2">Ward 2</SelectItem>
-                          <SelectItem value="Ward 3">Ward 3</SelectItem>
-                          <SelectItem value="Ward 4">Ward 4</SelectItem>
-                          <SelectItem value="Ward 5">Ward 5</SelectItem>
-                          <SelectItem value="Ward 6">Ward 6</SelectItem>
-                          <SelectItem value="Ward 7">Ward 7</SelectItem>
-                          <SelectItem value="Ward 8">Ward 8</SelectItem>
-                          <SelectItem value="Ward 9">Ward 9</SelectItem>
-                          <SelectItem value="Ward 10">Ward 10</SelectItem>
-                          <SelectItem value="Ward 11">Ward 11</SelectItem>
-                          <SelectItem value="Ward 12">Ward 12</SelectItem>
-                          <SelectItem value="Ward 13">Ward 13</SelectItem>
-                          <SelectItem value="Ward 14">Ward 14</SelectItem>
-                          <SelectItem value="Ward 15">Ward 15</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        options={wardOptions}
+                        placeholder="Select ward"
+                      />
                     </div>
                     <div>
                       <Label htmlFor="habitation">Habitation *</Label>
@@ -1034,12 +1246,21 @@ const StudyCenters = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      <Input
+                        id="groupLeaderManual"
+                        className="mt-2"
+                        placeholder="Or enter group leader manually"
+                        value={manualGroupLeader}
+                        onChange={(event) =>
+                          setManualGroupLeader(event.target.value)
+                        }
+                      />
                     </div>
                   </div>
 
                   {/* Teachers Section */}
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <Label>Teachers</Label>
                       <Button type="button" onClick={addTeacherField} size="sm">
                         <Plus className="h-4 w-4 mr-2" />
@@ -1077,6 +1298,17 @@ const StudyCenters = () => {
                               ))}
                             </SelectContent>
                           </Select>
+                          <Input
+                            className="mt-2"
+                            placeholder="Or enter teacher manually"
+                            value={manualTeachers[index] || ""}
+                            onChange={(event) =>
+                              setManualTeachers({
+                                ...manualTeachers,
+                                [index]: event.target.value,
+                              })
+                            }
+                          />
                         </div>
                         {formData.teachers.length > 0 && (
                           <Button
@@ -1406,34 +1638,15 @@ const StudyCenters = () => {
                     </div>
                     <div>
                       <Label htmlFor="editWardNo">Ward No *</Label>
-                      <Select
+                      <WardCombobox
+                        id="editWardNo"
                         value={formData.wardNo}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           setFormData({ ...formData, wardNo: value })
                         }
-                        required
-                      >
-                        <SelectTrigger id="editWardNo">
-                          <SelectValue placeholder="Select ward" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ward 1">Ward 1</SelectItem>
-                          <SelectItem value="Ward 2">Ward 2</SelectItem>
-                          <SelectItem value="Ward 3">Ward 3</SelectItem>
-                          <SelectItem value="Ward 4">Ward 4</SelectItem>
-                          <SelectItem value="Ward 5">Ward 5</SelectItem>
-                          <SelectItem value="Ward 6">Ward 6</SelectItem>
-                          <SelectItem value="Ward 7">Ward 7</SelectItem>
-                          <SelectItem value="Ward 8">Ward 8</SelectItem>
-                          <SelectItem value="Ward 9">Ward 9</SelectItem>
-                          <SelectItem value="Ward 10">Ward 10</SelectItem>
-                          <SelectItem value="Ward 11">Ward 11</SelectItem>
-                          <SelectItem value="Ward 12">Ward 12</SelectItem>
-                          <SelectItem value="Ward 13">Ward 13</SelectItem>
-                          <SelectItem value="Ward 14">Ward 14</SelectItem>
-                          <SelectItem value="Ward 15">Ward 15</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        options={wardOptions}
+                        placeholder="Select ward"
+                      />
                     </div>
                     <div>
                       <Label htmlFor="editHabitation">Habitation *</Label>
@@ -1521,12 +1734,21 @@ const StudyCenters = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      <Input
+                        id="editGroupLeaderManual"
+                        className="mt-2"
+                        placeholder="Or enter group leader manually"
+                        value={manualGroupLeader}
+                        onChange={(event) =>
+                          setManualGroupLeader(event.target.value)
+                        }
+                      />
                     </div>
                   </div>
 
                   {/* Teachers Section */}
                   <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <Label>Teachers</Label>
                       <Button type="button" onClick={addTeacherField} size="sm">
                         <Plus className="h-4 w-4 mr-2" />
@@ -1564,6 +1786,17 @@ const StudyCenters = () => {
                               ))}
                             </SelectContent>
                           </Select>
+                          <Input
+                            className="mt-2"
+                            placeholder="Or enter teacher manually"
+                            value={manualTeachers[index] || ""}
+                            onChange={(event) =>
+                              setManualTeachers({
+                                ...manualTeachers,
+                                [index]: event.target.value,
+                              })
+                            }
+                          />
                         </div>
                         {formData.teachers.length > 0 && (
                           <Button

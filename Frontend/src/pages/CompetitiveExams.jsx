@@ -11,6 +11,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -48,6 +63,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   BookOpen,
+  Check,
+  ChevronsUpDown,
   Plus,
   Search,
   Filter,
@@ -57,11 +74,237 @@ import {
   RefreshCw,
   Menu,
 } from "lucide-react";
-import { competitiveExamAPI } from "../services/api";
+import { competitiveExamAPI, scStudentAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import { getWardOptions } from "../lib/formOptions";
+
+const EXAM_TYPE_OPTIONS = [
+  "JEE Main",
+  "JEE Advanced",
+  "NEET",
+  "UPSC",
+  "SSC",
+  "Bank PO",
+  "Bank Clerk",
+  "Railway",
+  "Police",
+  "Teaching",
+  "State PSC",
+  "Other",
+];
+
+const CATEGORY_SOCIAL_OPTIONS = [
+  "SC",
+  "ST",
+  "OBC",
+  "Muslim",
+  "General",
+  "EWS",
+  "Other",
+];
+
+const SOCIAL_STATUS_ALLOWED_VALUES = ["SC", "ST", "OBC", "General", "EWS"];
+
+const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const selectedWard = options.find((ward) => ward.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-list`}
+          className="h-9 w-full justify-between bg-input px-3 text-left text-sm font-normal text-foreground"
+        >
+          {selectedWard ? selectedWard.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Type ward number..."
+            autoFocus
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <CommandList
+            id={`${id}-list`}
+            className="max-h-56"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>No ward found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((ward) => (
+                <CommandItem
+                  key={ward.value}
+                  value={`${ward.label} ${ward.numberValue}`}
+                  onSelect={() => {
+                    onChange(ward.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === ward.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {ward.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+const StudentCombobox = ({ id, value, onSelectStudent, students, loading }) => {
+  const [open, setOpen] = useState(false);
+  const selectedStudent = students.find((student) => student._id === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-list`}
+          className="h-9 w-full justify-between bg-input px-3 text-left text-sm font-normal text-foreground"
+        >
+          {selectedStudent
+            ? `${selectedStudent.householdCode} - ${selectedStudent.name}`
+            : "Select student from SC list"}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Search by household code or name..."
+            autoFocus
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <CommandList
+            id={`${id}-list`}
+            className="max-h-64"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>
+              {loading ? "Loading SC students..." : "No SC student found."}
+            </CommandEmpty>
+            <CommandGroup>
+              {students.map((student) => (
+                <CommandItem
+                  key={student._id}
+                  value={`${student.householdCode || ""} ${student.name || ""}`}
+                  onSelect={() => {
+                    onSelectStudent(student);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === student._id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {student.householdCode} - {student.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+const ExamTypeMultiSelect = ({ id, values, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const selectedLabels = EXAM_TYPE_OPTIONS.filter((option) =>
+    values.includes(option)
+  );
+
+  const toggleValue = (value) => {
+    if (values.includes(value)) {
+      onChange(values.filter((item) => item !== value));
+      return;
+    }
+    onChange([...values, value]);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="h-9 w-full justify-between bg-input px-3 text-left text-sm font-normal text-foreground"
+        >
+          {selectedLabels.length > 0
+            ? selectedLabels.join(", ")
+            : "Select exam types"}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Search exam type..."
+            autoFocus
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <CommandList className="max-h-64" onWheel={(event) => event.stopPropagation()}>
+            <CommandEmpty>No exam type found.</CommandEmpty>
+            <CommandGroup>
+              {EXAM_TYPE_OPTIONS.map((option) => {
+                const checked = values.includes(option);
+                return (
+                  <CommandItem
+                    key={option}
+                    value={option}
+                    onSelect={() => toggleValue(option)}
+                  >
+                    <Checkbox
+                      checked={checked}
+                      className="mr-2"
+                      onCheckedChange={() => toggleValue(option)}
+                      onClick={(event) => event.stopPropagation()}
+                    />
+                    {option}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const CompetitiveExams = () => {
+  const wardOptions = getWardOptions();
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [exams, setExams] = useState([]);
@@ -78,11 +321,14 @@ const CompetitiveExams = () => {
     total: 0,
     pages: 0,
   });
+  const [scStudents, setScStudents] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
   const [selectedExam, setSelectedExam] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [formData, setFormData] = useState({
+    scStudentId: "",
     householdCode: "",
     name: "",
     gender: "",
@@ -92,10 +338,9 @@ const CompetitiveExams = () => {
     wardNo: "",
     habitation: "",
     projectResponsible: "",
-    category: "",
-    socialStatus: "",
+    socialCategory: "",
     educationalStatus: "",
-    typeOfExam: "",
+    typeOfExam: [],
     status: "Preparing",
     dateOfEnrollment: "",
     enrolledBy: "",
@@ -138,16 +383,51 @@ const CompetitiveExams = () => {
     fetchExams();
   }, [pagination.page, pagination.limit, searchTerm, filters]);
 
+  const fetchScStudents = async () => {
+    setStudentsLoading(true);
+    try {
+      const response = await scStudentAPI.getAll({
+        page: 1,
+        limit: 500,
+      });
+      setScStudents(response?.data?.data || []);
+    } catch (error) {
+      toast.error("Failed to fetch SC student list");
+      console.error("Error fetching SC student list:", error);
+    } finally {
+      setStudentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchScStudents();
+  }, []);
+
+  useEffect(() => {
+    if (isCreateModalOpen || isEditModalOpen) {
+      fetchScStudents();
+    }
+  }, [isCreateModalOpen, isEditModalOpen]);
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const { socialCategory, ...restFormData } = formData;
+      const payload = {
+        ...restFormData,
+        category: socialCategory || "",
+        socialStatus: SOCIAL_STATUS_ALLOWED_VALUES.includes(socialCategory)
+          ? socialCategory
+          : "",
+      };
+
       if (selectedExam) {
-        await competitiveExamAPI.update(selectedExam._id, formData);
+        await competitiveExamAPI.update(selectedExam._id, payload);
         toast.success("Competitive exam record updated successfully");
         setIsEditModalOpen(false);
       } else {
-        await competitiveExamAPI.create(formData);
+        await competitiveExamAPI.create(payload);
         toast.success("Competitive exam record created successfully");
         setIsCreateModalOpen(false);
       }
@@ -173,6 +453,7 @@ const CompetitiveExams = () => {
   // Reset form
   const resetForm = () => {
     setFormData({
+      scStudentId: "",
       householdCode: "",
       name: "",
       gender: "",
@@ -182,10 +463,9 @@ const CompetitiveExams = () => {
       wardNo: "",
       habitation: "",
       projectResponsible: "",
-      category: "",
-      socialStatus: "",
+      socialCategory: "",
       educationalStatus: "",
-      typeOfExam: "",
+      typeOfExam: [],
       status: "Preparing",
       dateOfEnrollment: "",
       enrolledBy: "",
@@ -209,6 +489,13 @@ const CompetitiveExams = () => {
     setSelectedExam(exam);
     setFormData({
       ...exam,
+      scStudentId: exam.scStudentId?._id || exam.scStudentId || "",
+      socialCategory: exam.socialStatus || exam.category || "",
+      typeOfExam: Array.isArray(exam.typeOfExam)
+        ? exam.typeOfExam
+        : exam.typeOfExam
+        ? [exam.typeOfExam]
+        : [],
       dateOfEnrollment: exam.dateOfEnrollment
         ? new Date(exam.dateOfEnrollment).toISOString().split("T")[0]
         : "",
@@ -226,6 +513,23 @@ const CompetitiveExams = () => {
         : "",
     });
     setIsEditModalOpen(true);
+  };
+
+  const handleStudentSelect = (student) => {
+    setFormData((prev) => ({
+      ...prev,
+      scStudentId: student._id,
+      householdCode: student.householdCode || prev.householdCode,
+      name: student.name || prev.name,
+      gender: student.gender || prev.gender,
+      age: student.age?.toString() || prev.age,
+      contactNo: student.contactNo || prev.contactNo,
+      headOfHousehold: student.headOfHousehold || prev.headOfHousehold,
+      wardNo: student.wardNo || prev.wardNo,
+      habitation: student.habitation || prev.habitation,
+      projectResponsible: student.projectResponsible || prev.projectResponsible,
+      socialCategory: student.category || prev.socialCategory,
+    }));
   };
 
   // Open view modal
@@ -299,7 +603,7 @@ const CompetitiveExams = () => {
                     />
                   </div>
                   <div>
-                    {/* <Select
+                    <Select
                       value={filters.wardNo}
                       onValueChange={(value) =>
                         setFilters({ ...filters, wardNo: value })
@@ -310,13 +614,13 @@ const CompetitiveExams = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Wards</SelectItem>
-                        <SelectItem value="1">Ward 1</SelectItem>
-                        <SelectItem value="2">Ward 2</SelectItem>
-                        <SelectItem value="3">Ward 3</SelectItem>
-                        <SelectItem value="4">Ward 4</SelectItem>
-                        <SelectItem value="5">Ward 5</SelectItem>
+                        {wardOptions.map((ward) => (
+                          <SelectItem key={ward.value} value={ward.value}>
+                            {ward.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
-                    </Select> */}
+                    </Select>
                   </div>
                   <div>
                     {/* <Select
@@ -413,7 +717,11 @@ const CompetitiveExams = () => {
                           </TableCell>
                           <TableCell>{exam.age}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">{exam.typeOfExam}</Badge>
+                            <Badge variant="outline">
+                              {Array.isArray(exam.typeOfExam)
+                                ? exam.typeOfExam.join(", ")
+                                : exam.typeOfExam}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -546,6 +854,16 @@ const CompetitiveExams = () => {
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Label htmlFor="scStudentId">Select Student from SC List</Label>
+                      <StudentCombobox
+                        id="scStudentId"
+                        value={formData.scStudentId}
+                        onSelectStudent={handleStudentSelect}
+                        students={scStudents}
+                        loading={studentsLoading}
+                      />
+                    </div>
                     <div>
                       <Label htmlFor="householdCode">Household Code *</Label>
                       <Input
@@ -590,7 +908,7 @@ const CompetitiveExams = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="age">Age *</Label>
+                      <Label htmlFor="age">Age</Label>
                       <Input
                         id="age"
                         type="number"
@@ -600,11 +918,10 @@ const CompetitiveExams = () => {
                         }
                         min="0"
                         max="120"
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="contactNo">Contact Number *</Label>
+                      <Label htmlFor="contactNo">Contact Number</Label>
                       <Input
                         id="contactNo"
                         value={formData.contactNo}
@@ -614,12 +931,11 @@ const CompetitiveExams = () => {
                             contactNo: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="headOfHousehold">
-                        Head of Household *
+                        Head of Household
                       </Label>
                       <Input
                         id="headOfHousehold"
@@ -630,36 +946,22 @@ const CompetitiveExams = () => {
                             headOfHousehold: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="wardNo">Ward Number *</Label>
-                      <Select
+                      <WardCombobox
+                        id="wardNo"
                         value={formData.wardNo}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           setFormData({ ...formData, wardNo: value })
                         }
-                      >
-                        <SelectTrigger id="wardNo">
-                          <SelectValue placeholder="Select ward" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ward 1">Ward 1</SelectItem>
-                          <SelectItem value="Ward 2">Ward 2</SelectItem>
-                          <SelectItem value="Ward 3">Ward 3</SelectItem>
-                          <SelectItem value="Ward 4">Ward 4</SelectItem>
-                          <SelectItem value="Ward 5">Ward 5</SelectItem>
-                          <SelectItem value="Ward 6">Ward 6</SelectItem>
-                          <SelectItem value="Ward 7">Ward 7</SelectItem>
-                          <SelectItem value="Ward 8">Ward 8</SelectItem>
-                          <SelectItem value="Ward 9">Ward 9</SelectItem>
-                          <SelectItem value="Ward 10">Ward 10</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        options={wardOptions}
+                        placeholder="Select ward"
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="habitation">Habitation *</Label>
+                      <Label htmlFor="habitation">Habitation</Label>
                       <Input
                         id="habitation"
                         value={formData.habitation}
@@ -669,7 +971,6 @@ const CompetitiveExams = () => {
                             habitation: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
@@ -689,83 +990,36 @@ const CompetitiveExams = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="category">Category *</Label>
+                      <Label htmlFor="socialCategory">
+                        Category / Social Status
+                      </Label>
                       <Select
-                        value={formData.category}
+                        value={formData.socialCategory}
                         onValueChange={(value) =>
-                          setFormData({ ...formData, category: value })
-                        }
-                        required
-                      >
-                        <SelectTrigger id="category">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="SC">SC</SelectItem>
-                          <SelectItem value="ST">ST</SelectItem>
-                          <SelectItem value="OBC">OBC</SelectItem>
-                          <SelectItem value="Muslim">Muslim</SelectItem>
-                          <SelectItem value="General">General</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="socialStatus">Social Status *</Label>
-                      <Select
-                        value={formData.socialStatus}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, socialStatus: value })
+                          setFormData({ ...formData, socialCategory: value })
                         }
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select social status" />
+                        <SelectTrigger id="socialCategory">
+                          <SelectValue placeholder="Select category / social status" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="SC">
-                            SC (Scheduled Caste)
-                          </SelectItem>
-                          <SelectItem value="ST">
-                            ST (Scheduled Tribe)
-                          </SelectItem>
-                          <SelectItem value="OBC">
-                            OBC (Other Backward Class)
-                          </SelectItem>
-                          <SelectItem value="General">General</SelectItem>
-                          <SelectItem value="EWS">
-                            EWS (Economically Weaker Section)
-                          </SelectItem>
+                          {CATEGORY_SOCIAL_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
                       <Label htmlFor="typeOfExam">Type of Exam *</Label>
-                      <Select
-                        value={formData.typeOfExam}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, typeOfExam: value })
+                      <ExamTypeMultiSelect
+                        id="typeOfExam"
+                        values={formData.typeOfExam}
+                        onChange={(values) =>
+                          setFormData({ ...formData, typeOfExam: values })
                         }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select exam type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="JEE Main">JEE Main</SelectItem>
-                          <SelectItem value="JEE Advanced">
-                            JEE Advanced
-                          </SelectItem>
-                          <SelectItem value="NEET">NEET</SelectItem>
-                          <SelectItem value="UPSC">UPSC</SelectItem>
-                          <SelectItem value="SSC">SSC</SelectItem>
-                          <SelectItem value="Bank PO">Bank PO</SelectItem>
-                          <SelectItem value="Bank Clerk">Bank Clerk</SelectItem>
-                          <SelectItem value="Railway">Railway</SelectItem>
-                          <SelectItem value="Police">Police</SelectItem>
-                          <SelectItem value="Teaching">Teaching</SelectItem>
-                          <SelectItem value="State PSC">State PSC</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      />
                     </div>
                     <div>
                       <Label htmlFor="status">Status</Label>
@@ -793,7 +1047,7 @@ const CompetitiveExams = () => {
                     </div>
                     <div>
                       <Label htmlFor="dateOfEnrollment">
-                        Date of Enrollment *
+                        Date of Enrollment
                       </Label>
                       <Input
                         id="dateOfEnrollment"
@@ -805,11 +1059,10 @@ const CompetitiveExams = () => {
                             dateOfEnrollment: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="enrolledBy">Enrolled By *</Label>
+                      <Label htmlFor="enrolledBy">Enrolled By</Label>
                       <Input
                         id="enrolledBy"
                         value={formData.enrolledBy}
@@ -819,12 +1072,11 @@ const CompetitiveExams = () => {
                             enrolledBy: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div className="md:col-span-2">
                       <Label htmlFor="educationalStatus">
-                        Educational Status *
+                        Educational Status
                       </Label>
                       <Input
                         id="educationalStatus"
@@ -835,7 +1087,6 @@ const CompetitiveExams = () => {
                             educationalStatus: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                   </div>
@@ -861,6 +1112,18 @@ const CompetitiveExams = () => {
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Label htmlFor="editScStudentId">
+                        Select Student from SC List
+                      </Label>
+                      <StudentCombobox
+                        id="editScStudentId"
+                        value={formData.scStudentId}
+                        onSelectStudent={handleStudentSelect}
+                        students={scStudents}
+                        loading={studentsLoading}
+                      />
+                    </div>
                     <div>
                       <Label htmlFor="editHouseholdCode">
                         Household Code *
@@ -907,7 +1170,7 @@ const CompetitiveExams = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="editAge">Age *</Label>
+                      <Label htmlFor="editAge">Age</Label>
                       <Input
                         id="editAge"
                         type="number"
@@ -917,11 +1180,10 @@ const CompetitiveExams = () => {
                         }
                         min="0"
                         max="120"
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="editContactNo">Contact Number *</Label>
+                      <Label htmlFor="editContactNo">Contact Number</Label>
                       <Input
                         id="editContactNo"
                         value={formData.contactNo}
@@ -931,12 +1193,11 @@ const CompetitiveExams = () => {
                             contactNo: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="editHeadOfHousehold">
-                        Head of Household *
+                        Head of Household
                       </Label>
                       <Input
                         id="editHeadOfHousehold"
@@ -947,22 +1208,22 @@ const CompetitiveExams = () => {
                             headOfHousehold: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="editWardNo">Ward Number *</Label>
-                      <Input
+                      <WardCombobox
                         id="editWardNo"
                         value={formData.wardNo}
-                        onChange={(e) =>
-                          setFormData({ ...formData, wardNo: e.target.value })
+                        onChange={(value) =>
+                          setFormData({ ...formData, wardNo: value })
                         }
-                        required
+                        options={wardOptions}
+                        placeholder="Select ward"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="editHabitation">Habitation *</Label>
+                      <Label htmlFor="editHabitation">Habitation</Label>
                       <Input
                         id="editHabitation"
                         value={formData.habitation}
@@ -972,7 +1233,6 @@ const CompetitiveExams = () => {
                             habitation: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
@@ -992,83 +1252,36 @@ const CompetitiveExams = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="editCategory">Category *</Label>
+                      <Label htmlFor="editSocialCategory">
+                        Category / Social Status
+                      </Label>
                       <Select
-                        value={formData.category}
+                        value={formData.socialCategory}
                         onValueChange={(value) =>
-                          setFormData({ ...formData, category: value })
-                        }
-                        required
-                      >
-                        <SelectTrigger id="editCategory">
-                          <SelectValue placeholder="Select category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="SC">SC</SelectItem>
-                          <SelectItem value="ST">ST</SelectItem>
-                          <SelectItem value="OBC">OBC</SelectItem>
-                          <SelectItem value="Muslim">Muslim</SelectItem>
-                          <SelectItem value="General">General</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="editSocialStatus">Social Status *</Label>
-                      <Select
-                        value={formData.socialStatus}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, socialStatus: value })
+                          setFormData({ ...formData, socialCategory: value })
                         }
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select social status" />
+                        <SelectTrigger id="editSocialCategory">
+                          <SelectValue placeholder="Select category / social status" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="SC">
-                            SC (Scheduled Caste)
-                          </SelectItem>
-                          <SelectItem value="ST">
-                            ST (Scheduled Tribe)
-                          </SelectItem>
-                          <SelectItem value="OBC">
-                            OBC (Other Backward Class)
-                          </SelectItem>
-                          <SelectItem value="General">General</SelectItem>
-                          <SelectItem value="EWS">
-                            EWS (Economically Weaker Section)
-                          </SelectItem>
+                          {CATEGORY_SOCIAL_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
                       <Label htmlFor="editTypeOfExam">Type of Exam *</Label>
-                      <Select
-                        value={formData.typeOfExam}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, typeOfExam: value })
+                      <ExamTypeMultiSelect
+                        id="editTypeOfExam"
+                        values={formData.typeOfExam}
+                        onChange={(values) =>
+                          setFormData({ ...formData, typeOfExam: values })
                         }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select exam type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="JEE Main">JEE Main</SelectItem>
-                          <SelectItem value="JEE Advanced">
-                            JEE Advanced
-                          </SelectItem>
-                          <SelectItem value="NEET">NEET</SelectItem>
-                          <SelectItem value="UPSC">UPSC</SelectItem>
-                          <SelectItem value="SSC">SSC</SelectItem>
-                          <SelectItem value="Bank PO">Bank PO</SelectItem>
-                          <SelectItem value="Bank Clerk">Bank Clerk</SelectItem>
-                          <SelectItem value="Railway">Railway</SelectItem>
-                          <SelectItem value="Police">Police</SelectItem>
-                          <SelectItem value="Teaching">Teaching</SelectItem>
-                          <SelectItem value="State PSC">State PSC</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      />
                     </div>
                     <div>
                       <Label htmlFor="editStatus">Status</Label>
@@ -1216,12 +1429,10 @@ const CompetitiveExams = () => {
                           <p>{selectedExam.projectResponsible}</p>
                         </div>
                         <div>
-                          <Label className="font-semibold">Category</Label>
-                          <p>{selectedExam.category}</p>
-                        </div>
-                        <div>
-                          <Label className="font-semibold">Social Status</Label>
-                          <p>{selectedExam.socialStatus || "N/A"}</p>
+                          <Label className="font-semibold">
+                            Category / Social Status
+                          </Label>
+                          <p>{selectedExam.socialStatus || selectedExam.category || "N/A"}</p>
                         </div>
                         <div>
                           <Label className="font-semibold">
@@ -1240,7 +1451,11 @@ const CompetitiveExams = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label className="font-semibold">Type of Exam</Label>
-                          <Badge>{selectedExam.typeOfExam}</Badge>
+                          <Badge>
+                            {Array.isArray(selectedExam.typeOfExam)
+                              ? selectedExam.typeOfExam.join(", ")
+                              : selectedExam.typeOfExam}
+                          </Badge>
                         </div>
                         <div>
                           <Label className="font-semibold">Status</Label>

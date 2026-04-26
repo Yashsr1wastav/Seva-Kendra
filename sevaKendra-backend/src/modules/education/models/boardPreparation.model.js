@@ -89,6 +89,15 @@ const boardPreparationSchema = new mongoose.Schema(
       ],
       trim: true,
     },
+    educationBoard: {
+      type: String,
+      enum: ["WBBSE", "CBSE", "ICSE", "NIOS", "Other"],
+      default: "WBBSE",
+    },
+    educationBoardOther: {
+      type: String,
+      trim: true,
+    },
     status: {
       type: String,
       required: [true, "Status is required"],

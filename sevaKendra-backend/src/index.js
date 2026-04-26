@@ -11,48 +11,29 @@ import { appConfig } from "./config/appConfig.js";
 
 const app = express();
 
-// Middleware: Ensure Database Connection for every request
-app.use(async (req, res, next) => {
-  try {
-    await dbConnect();
-    next();
-  } catch (error) {
-    console.error("Database connection failed in middleware:", error);
-    res.status(500).json({ error: "Service unavailable: Database connection failed" });
-  }
-});
-
-const whitelist = appConfig.whiteList.split(",");
+const whitelist = appConfig.whiteList
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 app.set("trust proxy", 1);
 
-// const corsOptions = {
-//   origin(origin, callback) {
-//     console.log(origin, "origin");
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || whitelist.length === 0 || whitelist.includes(origin)) {
+      callback(null, true);
+      return;
+    }
 
-//     if (!origin) {
-//       return callback(null, true); // for mobile app and postman client
-//     }
-//     if (whitelist.indexOf(origin) !== -1) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error("Not allowed by CORS"));
-//     }
-//   },
-//   credentials: true,
-// };
+    callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
 
-// app.use(cors(corsOptions));
-// allow all origins
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-    credentials: false,
-    optionsSuccessStatus: 200,
-  })
-);
+app.use(cors(corsOptions));
 app.use(
   express.json({
     type: ["application/json", "text/plain"],
@@ -63,7 +44,16 @@ app.use(helmet());
 app.use(morgan("tiny"));
 
 // Handle preflight requests
-app.options("*", cors());
+app.options("*", cors(corsOptions));
+
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    service: "ngo_backend",
+    environment: appConfig.nodeEnv || "development",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 app.use("/api/v1", indexRouter);
 
@@ -72,7 +62,25 @@ app.use(errorHandler);
 
 const port = appConfig.port;
 
-app.listen(port, () => {
-  console.log(`Server Running on ${port}`);
-  return true;
-});
+const startServer = async () => {
+  try {
+    await dbConnect();
+
+    app.listen(port, () => {
+      console.log(`Server Running on ${port}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error.message);
+    process.exit(1);
+  }
+};
+
+if (process.env.VERCEL) {
+  dbConnect().catch((error) => {
+    console.error("Database connection failed on Vercel runtime:", error.message);
+  });
+} else {
+  startServer();
+}
+
+export default app;

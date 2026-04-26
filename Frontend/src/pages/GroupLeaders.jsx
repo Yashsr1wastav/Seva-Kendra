@@ -74,10 +74,34 @@ const GroupLeaders = () => {
     lastName: "",
     email: "",
     phoneNumber: "",
-    experience: "",
+    experienceYears: "",
+    experienceDomain: "",
     qualifications: "",
     status: "Active",
   });
+
+  const getExperienceYears = (leader) => {
+    if (typeof leader?.experience === "number") {
+      return leader.experience;
+    }
+    return leader?.experience?.years || 0;
+  };
+
+  const getExperienceDisplay = (leader) => {
+    const years = getExperienceYears(leader);
+    const field = leader?.experience?.domain?.trim() || "Not specified";
+    return `${years} years / ${field}`;
+  };
+
+  const getQualificationsList = (qualifications) => {
+    if (Array.isArray(qualifications)) {
+      return qualifications;
+    }
+    if (typeof qualifications === "string" && qualifications.trim()) {
+      return [qualifications.trim()];
+    }
+    return [];
+  };
 
   // Fetch group leaders
   const fetchGroupLeaders = async () => {
@@ -108,14 +132,33 @@ const GroupLeaders = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (!/^[6-9]\d{9}$/.test(formData.phoneNumber || "")) {
+        toast.error("Please enter a valid 10 digit mobile number");
+        return;
+      }
+
       const submitData = {
         ...formData,
-        experience: parseInt(formData.experience) || 0,
-        qualifications: formData.qualifications
-          .split(",")
-          .map((q) => q.trim())
-          .filter((q) => q),
+        experience: {
+          years: parseInt(formData.experienceYears) || 0,
+          domain: formData.experienceDomain || "",
+        },
       };
+
+      if (!submitData.leaderId?.trim()) {
+        delete submitData.leaderId;
+      } else {
+        submitData.leaderId = submitData.leaderId.trim();
+      }
+
+      if (!submitData.email?.trim()) {
+        delete submitData.email;
+      } else {
+        submitData.email = submitData.email.trim();
+      }
+
+      delete submitData.experienceYears;
+      delete submitData.experienceDomain;
 
       if (selectedLeader) {
         await groupLeaderAPI.update(selectedLeader._id, submitData);
@@ -130,7 +173,12 @@ const GroupLeaders = () => {
       fetchGroupLeaders();
       resetForm();
     } catch (error) {
-      toast.error(error.response?.data?.message || "An error occurred");
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error?.message ||
+        error?.message ||
+        "An error occurred";
+      toast.error(message);
     }
   };
 
@@ -153,8 +201,9 @@ const GroupLeaders = () => {
       lastName: "",
       email: "",
       phoneNumber: "",
-      experience: "",
-      qualifications: "",
+      experienceYears: "",
+      experienceDomain: "",
+      qualifications: "Other",
       status: "Active",
     });
     setSelectedLeader(null);
@@ -169,10 +218,11 @@ const GroupLeaders = () => {
       leaderId: leader.leaderId,
       firstName: leader.firstName,
       lastName: leader.lastName,
-      email: leader.email,
+      email: leader.email || "",
       phoneNumber: leader.phoneNumber,
-      experience: leader.experience?.toString() || "",
-      qualifications: leader.qualifications?.join(", ") || "",
+      experienceYears: leader.experience?.years?.toString() || "",
+      experienceDomain: leader.experience?.domain || "",
+      qualifications: leader.qualifications || "Other",
       status: leader.status,
     });
     setIsEditModalOpen(true);
@@ -245,7 +295,7 @@ const GroupLeaders = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="leaderId">Leader ID *</Label>
+                      <Label htmlFor="leaderId">Leader ID</Label>
                       <Input
                         id="leaderId"
                         value={formData.leaderId}
@@ -255,7 +305,7 @@ const GroupLeaders = () => {
                             leaderId: e.target.value,
                           })
                         }
-                        required
+                        placeholder="Optional"
                       />
                     </div>
                     <div>
@@ -287,7 +337,7 @@ const GroupLeaders = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="email">Email *</Label>
+                      <Label htmlFor="email">Email</Label>
                       <Input
                         id="email"
                         type="email"
@@ -298,7 +348,7 @@ const GroupLeaders = () => {
                             email: e.target.value,
                           })
                         }
-                        required
+                        placeholder="Optional"
                       />
                     </div>
                     <div>
@@ -317,18 +367,32 @@ const GroupLeaders = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="experience">Experience (years)</Label>
+                      <Label htmlFor="experienceYears">Experience (years)</Label>
                       <Input
-                        id="experience"
+                        id="experienceYears"
                         type="number"
-                        value={formData.experience}
+                        value={formData.experienceYears}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            experience: e.target.value,
+                            experienceYears: e.target.value,
                           })
                         }
                         min="0"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="experienceDomain">Experience Domain</Label>
+                      <Input
+                        id="experienceDomain"
+                        value={formData.experienceDomain}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            experienceDomain: e.target.value,
+                          })
+                        }
+                        placeholder="Field (e.g., Education, Community Work)"
                       />
                     </div>
                     <div>
@@ -356,20 +420,30 @@ const GroupLeaders = () => {
                     </div>
                   </div>
                   <div>
-                    <Label htmlFor="qualifications">
-                      Qualifications (comma separated)
-                    </Label>
-                    <Input
-                      id="qualifications"
+                    <Label htmlFor="qualifications">Qualification</Label>
+                    <Select
                       value={formData.qualifications}
-                      onChange={(e) =>
+                      onValueChange={(value) =>
                         setFormData({
                           ...formData,
-                          qualifications: e.target.value,
+                          qualifications: value,
                         })
                       }
-                      placeholder="e.g., BA, MA, MSc"
-                    />
+                    >
+                      <SelectTrigger id="qualifications">
+                        <SelectValue placeholder="Select qualification" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Illiterate">Illiterate</SelectItem>
+                        <SelectItem value="Neo-literate">Neo-literate</SelectItem>
+                        <SelectItem value="Primary">Primary</SelectItem>
+                        <SelectItem value="Secondary">Secondary</SelectItem>
+                        <SelectItem value="Higher Secondary">Higher Secondary</SelectItem>
+                        <SelectItem value="Graduate">Graduate</SelectItem>
+                        <SelectItem value="Post-Graduate">Post-Graduate</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <DialogFooter>
@@ -434,7 +508,7 @@ const GroupLeaders = () => {
                             {leader.email}
                           </TableCell>
                           <TableCell>{leader.phoneNumber}</TableCell>
-                          <TableCell>{leader.experience || 0} years</TableCell>
+                          <TableCell>{getExperienceDisplay(leader)}</TableCell>
                           <TableCell>
                             <Badge
                               variant={
@@ -562,7 +636,7 @@ const GroupLeaders = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="editLeaderId">Leader ID *</Label>
+                <Label htmlFor="editLeaderId">Leader ID</Label>
                 <Input
                   id="editLeaderId"
                   value={formData.leaderId}
@@ -572,8 +646,7 @@ const GroupLeaders = () => {
                       leaderId: e.target.value,
                     })
                   }
-                  required
-                  disabled
+                  placeholder="Optional"
                 />
               </div>
               <div>
@@ -605,7 +678,7 @@ const GroupLeaders = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="editEmail">Email *</Label>
+                <Label htmlFor="editEmail">Email</Label>
                 <Input
                   id="editEmail"
                   type="email"
@@ -616,11 +689,11 @@ const GroupLeaders = () => {
                       email: e.target.value,
                     })
                   }
-                  required
+                  placeholder="Optional"
                 />
               </div>
               <div>
-                <Label htmlFor="editPhoneNumber">Phone Number *</Label>
+                <Label htmlFor="editPhoneNumber">Phone Number</Label>
                 <Input
                   id="editPhoneNumber"
                   value={formData.phoneNumber}
@@ -630,7 +703,6 @@ const GroupLeaders = () => {
                       phoneNumber: e.target.value,
                     })
                   }
-                  required
                 />
               </div>
               <div>
@@ -638,14 +710,28 @@ const GroupLeaders = () => {
                 <Input
                   id="editExperience"
                   type="number"
-                  value={formData.experience}
+                  value={formData.experienceYears}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      experience: e.target.value,
+                      experienceYears: e.target.value,
                     })
                   }
                   min="0"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editExperienceDomain">Experience Domain</Label>
+                <Input
+                  id="editExperienceDomain"
+                  value={formData.experienceDomain}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      experienceDomain: e.target.value,
+                    })
+                  }
+                  placeholder="Field (e.g., Education, Community Work)"
                 />
               </div>
               <div>
@@ -673,20 +759,30 @@ const GroupLeaders = () => {
               </div>
             </div>
             <div>
-              <Label htmlFor="editQualifications">
-                Qualifications (comma separated)
-              </Label>
-              <Input
-                id="editQualifications"
+              <Label htmlFor="editQualifications">Qualification</Label>
+              <Select
                 value={formData.qualifications}
-                onChange={(e) =>
+                onValueChange={(value) =>
                   setFormData({
                     ...formData,
-                    qualifications: e.target.value,
+                    qualifications: value,
                   })
                 }
-                placeholder="e.g., BA, MA, MSc"
-              />
+              >
+                <SelectTrigger id="editQualifications">
+                  <SelectValue placeholder="Select qualification" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Illiterate">Illiterate</SelectItem>
+                  <SelectItem value="Neo-literate">Neo-literate</SelectItem>
+                  <SelectItem value="Primary">Primary</SelectItem>
+                  <SelectItem value="Secondary">Secondary</SelectItem>
+                  <SelectItem value="Higher Secondary">Higher Secondary</SelectItem>
+                  <SelectItem value="Graduate">Graduate</SelectItem>
+                  <SelectItem value="Post-Graduate">Post-Graduate</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <DialogFooter>
@@ -737,9 +833,7 @@ const GroupLeaders = () => {
                   <p className="text-sm font-medium text-muted-foreground">
                     Experience
                   </p>
-                  <p className="text-lg">
-                    {selectedLeader.experience || 0} years
-                  </p>
+                  <p className="text-lg">{getExperienceDisplay(selectedLeader)}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Status</p>
@@ -760,9 +854,8 @@ const GroupLeaders = () => {
                     Qualifications
                   </p>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {selectedLeader.qualifications &&
-                    selectedLeader.qualifications.length > 0 ? (
-                      selectedLeader.qualifications.map((qual) => (
+                    {getQualificationsList(selectedLeader.qualifications).length > 0 ? (
+                      getQualificationsList(selectedLeader.qualifications).map((qual) => (
                         <Badge key={qual} variant="outline">
                           {qual}
                         </Badge>

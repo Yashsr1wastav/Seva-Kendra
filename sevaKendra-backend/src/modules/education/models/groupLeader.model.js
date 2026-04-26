@@ -4,8 +4,8 @@ const groupLeaderSchema = new mongoose.Schema(
   {
     leaderId: {
       type: String,
-      required: [true, "Leader ID is required"],
       unique: true,
+      sparse: true,
       trim: true,
     },
     firstName: {
@@ -20,7 +20,6 @@ const groupLeaderSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
       match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, "Please provide a valid email address"],
       lowercase: true,
       trim: true,
@@ -32,13 +31,29 @@ const groupLeaderSchema = new mongoose.Schema(
       trim: true,
     },
     experience: {
-      type: Number,
-      min: [0, "Experience cannot be negative"],
-      default: 0,
+      years: {
+        type: Number,
+        min: [0, "Experience cannot be negative"],
+        default: 0,
+      },
+      domain: {
+        type: String,
+        trim: true,
+      },
     },
     qualifications: {
-      type: [String],
-      default: [],
+      type: String,
+      enum: [
+        "Illiterate",
+        "Neo-literate",
+        "Primary",
+        "Secondary",
+        "Higher Secondary",
+        "Graduate",
+        "Post-Graduate",
+        "Other",
+      ],
+      default: "Other",
     },
     assignedStudyCenters: [
       {

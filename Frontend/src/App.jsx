@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,36 +8,38 @@ import {
 import { Toaster } from "sonner";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
-import SignIn from "./pages/SignIn";
-import Dashboard from "./pages/Dashboard";
-import Beneficiaries from "./pages/Beneficiaries";
-import LegalAid from "./pages/LegalAid";
-import Workshops from "./pages/Workshops";
-import Reports from "./pages/Reports";
-import Form from "./pages/Form";
-import StudyCenters from "./pages/StudyCenters";
-import Teachers from "./pages/Teachers";
-import GroupLeaders from "./pages/GroupLeaders";
-import SCStudents from "./pages/SCStudents";
-import Dropouts from "./pages/Dropouts";
-import Schools from "./pages/Schools";
-import CompetitiveExams from "./pages/CompetitiveExams";
-import BoardPreparation from "./pages/BoardPreparation";
-import ModuleReports from "./pages/ModuleReports";
-import HealthCamps from "./pages/HealthCamps";
-import Elderly from "./pages/Elderly";
-import MotherChild from "./pages/MotherChild";
-import PWD from "./pages/PWD";
-import Adolescents from "./pages/Adolescents";
-import Tuberculosis from "./pages/Tuberculosis";
-import HIV from "./pages/HIV";
-import Leprosy from "./pages/Leprosy";
-import Addiction from "./pages/Addiction";
-import OtherDiseases from "./pages/OtherDiseases";
-import CBUCBODetails from "./pages/CBUCBODetails";
-import Entitlements from "./pages/Entitlements";
-import TrackingDashboard from "./pages/TrackingDashboard";
-import UserManagement from "./pages/UserManagement";
+
+const SignIn = lazy(() => import("./pages/SignIn"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Beneficiaries = lazy(() => import("./pages/Beneficiaries"));
+const LegalAid = lazy(() => import("./pages/LegalAid"));
+const Workshops = lazy(() => import("./pages/Workshops"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Form = lazy(() => import("./pages/Form"));
+const StudyCenters = lazy(() => import("./pages/StudyCenters"));
+const Teachers = lazy(() => import("./pages/Teachers"));
+const GroupLeaders = lazy(() => import("./pages/GroupLeaders"));
+const SCStudents = lazy(() => import("./pages/SCStudents"));
+const Dropouts = lazy(() => import("./pages/Dropouts"));
+const Schools = lazy(() => import("./pages/Schools"));
+const CompetitiveExams = lazy(() => import("./pages/CompetitiveExams"));
+const BoardPreparation = lazy(() => import("./pages/BoardPreparation"));
+const ModuleReports = lazy(() => import("./pages/ModuleReports"));
+const HealthCamps = lazy(() => import("./pages/HealthCamps"));
+const Elderly = lazy(() => import("./pages/Elderly"));
+const MotherChild = lazy(() => import("./pages/MotherChild"));
+const PWD = lazy(() => import("./pages/PWD"));
+const Adolescents = lazy(() => import("./pages/Adolescents"));
+const Tuberculosis = lazy(() => import("./pages/Tuberculosis"));
+const HIV = lazy(() => import("./pages/HIV"));
+const Leprosy = lazy(() => import("./pages/Leprosy"));
+const Addiction = lazy(() => import("./pages/Addiction"));
+const OtherDiseases = lazy(() => import("./pages/OtherDiseases"));
+const CBUCBODetails = lazy(() => import("./pages/CBUCBODetails"));
+const Entitlements = lazy(() => import("./pages/Entitlements"));
+const TrackingDashboard = lazy(() => import("./pages/TrackingDashboard"));
+const UrgentCases = lazy(() => import("./pages/UrgentCases"));
+const UserManagement = lazy(() => import("./pages/UserManagement"));
 
 function App() {
   return (
@@ -44,6 +47,13 @@ function App() {
       <AuthProvider>
         <Toaster position="top-right" richColors expand={true} closeButton />
         <Router>
+          <Suspense
+            fallback={
+              <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+                Loading page...
+              </div>
+            }
+          >
         <Routes>
           <Route path="/signin" element={<SignIn />} />
           <Route
@@ -91,6 +101,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TrackingDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tracking/urgent-cases"
+            element={
+              <ProtectedRoute>
+                <UrgentCases />
               </ProtectedRoute>
             }
           />
@@ -289,6 +307,7 @@ function App() {
           <Route path="/form" element={<Form />} />
           <Route path="/" element={<Navigate to="/signin" replace />} />
         </Routes>
+        </Suspense>
       </Router>
       </AuthProvider>
     </div>

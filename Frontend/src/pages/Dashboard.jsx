@@ -82,6 +82,7 @@ import {
 import Sidebar from "../components/Sidebar";
 import {
   dashboardAPI,
+  analyticsAPI,
   reportsAPI,
   healthCampAPI,
   elderlyAPI,
@@ -104,6 +105,7 @@ import {
   legalAidServiceAPI,
   workshopAndAwarenessAPI,
   beneficiaryAPI,
+  trackingAPI,
 } from "../services/api";
 
 const Dashboard = () => {
@@ -111,6 +113,14 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState("last_30_days");
   const [activeView, setActiveView] = useState("overview");
+
+  // Custom targets state
+  const [isEditingTargets, setIsEditingTargets] = useState(false);
+  const [targetInputs, setTargetInputs] = useState({
+    health: 100,
+    education: 150,
+    socialJustice: 80,
+  });
 
   // Dashboard data states
   const [overviewStats, setOverviewStats] = useState({
@@ -163,12 +173,14 @@ const Dashboard = () => {
   });
 
   const [recentActivities, setRecentActivities] = useState([]);
+  const [quickInsights, setQuickInsights] = useState([]);
   const [expandedModules, setExpandedModules] = useState({
     health: false,
     education: false,
     socialJustice: false,
   });
   const [performanceData, setPerformanceData] = useState([]);
+  const [urgentAlerts, setUrgentAlerts] = useState([]);
 
   // Colors for charts - optimized for dark theme
   const COLORS = {
@@ -209,16 +221,26 @@ const Dashboard = () => {
   // Normalize totals from various module responses (supports different shapes)
   const extractTotal = (settled) => {
     if (!settled || settled.status !== "fulfilled") return 0;
-    // Axios interceptor returns response.data, so settled.value is top-level { data, success, message }
-    const top = settled.value;
-    const payload = top?.data; // expected { data: [...], pagination: {...} }
-    const pag = payload?.pagination || payload?.data?.pagination;
-    if (pag) {
-      return pag.total ?? pag.totalRecords ?? pag.count ?? 0;
+    const result = settled.value;
+    
+    // Handle different API response structures
+    if (!result) return 0;
+    
+    // Structure 1: { data: { pagination: { total, count, totalRecords } } }
+    if (result.data?.pagination) {
+      return result.data.pagination.total ?? result.data.pagination.totalRecords ?? result.data.pagination.count ?? 0;
     }
-    // Fallbacks
-    if (Array.isArray(payload?.data)) return payload.data.length;
-    if (Array.isArray(top?.data)) return top.data.length;
+    
+    // Structure 2: { data: { data: [], pagination: {} } }
+    if (result.data?.data?.pagination) {
+      return result.data.data.pagination.total ?? result.data.data.pagination.count ?? 0;
+    }
+    
+    // Structure 3: Direct array in data
+    if (Array.isArray(result.data?.data)) return result.data.data.length;
+    if (Array.isArray(result.data)) return result.data.length;
+    
+    // Structure 4: Legacy empty or single item
     return 0;
   };
 
@@ -226,137 +248,70 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      // We'll calculate overview stats from actual module data
-
-      // Fetch module-specific stats (these will return mock data or actual data)
-      const [
-        // Health module stats
-        healthCampsData,
-        elderlyData,
-        motherChildData,
-        adolescentsData,
-        tuberculosisData,
-        hivData,
-        leprosyData,
-        addictionData,
-        otherDiseasesData,
-        pwdData,
-
-        // Education module stats
-        studyCentersData,
-        scStudentsData,
-        dropoutsData,
-        schoolsData,
-        competitiveExamsData,
-        boardPrepData,
-
-        // Social Justice module stats
-        cbucboData,
-        entitlementsData,
-        legalAidData,
-        workshopsData,
-
-        // Other data
-        beneficiariesData,
-        reportsData,
-        activitiesData,
-      ] = await Promise.allSettled([
-        healthCampAPI.getAll({ limit: 1 }),
-        elderlyAPI.getAll({ limit: 1 }),
-        motherChildAPI.getAll({ limit: 1 }),
-        adolescentsAPI.getAll({ limit: 1 }),
-        tuberculosisAPI.getAll({ limit: 1 }),
-        hivAPI.getAll({ limit: 1 }),
-        leprosyAPI.getAll({ limit: 1 }),
-        addictionAPI.getAll({ limit: 1 }),
-        otherDiseasesAPI.getAll({ limit: 1 }),
-        pwdAPI.getAll({ limit: 1 }),
-
-        studyCenterAPI.getAll({ limit: 1 }),
-        scStudentAPI.getAll({ limit: 1 }),
-        dropoutAPI.getAll({ limit: 1 }),
-        schoolAPI.getAll({ limit: 1 }),
-        competitiveExamAPI.getAll({ limit: 1 }),
-        boardPreparationAPI.getAll({ limit: 1 }),
-
-        cbucboDetailsAPI.getAll({ limit: 1 }),
-        entitlementsAPI.getAll({ limit: 1 }),
-        legalAidServiceAPI.getAll({ limit: 1 }),
-        workshopAndAwarenessAPI.getAll({ limit: 1 }),
-
-        beneficiaryAPI.getAll({ limit: 1 }),
-        reportsAPI.getOverviewReport(dateRange),
-        dashboardAPI.getRecentActivity(),
+      // Use the new analytics API to get all dashboard data and stale urgent reminders
+      const [dashboardResult, urgentAlertsResult] = await Promise.allSettled([
+        analyticsAPI.getCompleteDashboard(dateRange),
+        trackingAPI.getUrgentCaseAlerts(2),
       ]);
 
-      // Debug logging
-      console.log("Health Camps Response:", healthCampsData);
-      if (healthCampsData.status === "fulfilled") {
-        console.log("Health Camps Data:", healthCampsData.value?.data);
-        console.log(
-          "Health Camps Pagination:",
-          healthCampsData.value?.data?.pagination
-        );
-        console.log(
-          "Health Camps Total:",
-          healthCampsData.value?.data?.pagination?.total
-        );
+      if (dashboardResult.status !== "fulfilled") {
+        throw dashboardResult.reason;
       }
 
-      // Process module stats
+      const data = dashboardResult.value.data;
+
+      if (urgentAlertsResult.status === "fulfilled") {
+        setUrgentAlerts(urgentAlertsResult.value.data || []);
+      } else {
+        setUrgentAlerts([]);
+      }
+
+      console.log("Complete Dashboard Data:", data);
+
+      // Set overview stats from real data
+      setOverviewStats({
+        totalBeneficiaries: data.overview.totalBeneficiaries || 0,
+        activeCases: data.overview.activeCases || 0,
+        pendingLegalAid: data.overview.pendingLegalAid || 0,
+        completedThisMonth: data.overview.completedCases || 0,
+        recentBeneficiaries: data.overview.recentBeneficiaries || 0,
+        urgentCases: data.overview.urgentCases || 0,
+      });
+
+      // Set module stats directly from analytics data
+      const moduleBreakdown = data.overview.moduleBreakdown || { health: 0, education: 0, socialJustice: 0 };
+      const moduleDetails = data.overview.moduleDetails || {};
+      
       const healthStats = {
-        totalCases: [
-          extractTotal(healthCampsData),
-          extractTotal(elderlyData),
-          extractTotal(motherChildData),
-          extractTotal(adolescentsData),
-          extractTotal(tuberculosisData),
-          extractTotal(hivData),
-          extractTotal(leprosyData),
-          extractTotal(addictionData),
-          extractTotal(otherDiseasesData),
-          extractTotal(pwdData),
-        ].reduce((a, b) => a + b, 0),
-        healthCamps: extractTotal(healthCampsData),
-        elderlySupport: extractTotal(elderlyData),
-        motherChildCare: extractTotal(motherChildData),
-        adolescentPrograms: extractTotal(adolescentsData),
-        tuberculosis: extractTotal(tuberculosisData),
-        hiv: extractTotal(hivData),
-        leprosy: extractTotal(leprosyData),
-        addiction: extractTotal(addictionData),
-        otherDiseases: extractTotal(otherDiseasesData),
-        pwdSupport: extractTotal(pwdData),
+        totalCases: moduleBreakdown.health || 0,
+        healthCamps: moduleDetails.healthCamps || 0,
+        elderlySupport: moduleDetails.elderly || 0,
+        motherChildCare: moduleDetails.motherChild || 0,
+        adolescentPrograms: moduleDetails.adolescents || 0,
+        tuberculosis: moduleDetails.tuberculosis || 0,
+        hiv: moduleDetails.hiv || 0,
+        leprosy: moduleDetails.leprosy || 0,
+        addiction: moduleDetails.addiction || 0,
+        otherDiseases: moduleDetails.otherDiseases || 0,
+        pwdSupport: moduleDetails.pwd || 0,
       };
 
       const educationStats = {
-        totalStudents: [
-          extractTotal(studyCentersData),
-          extractTotal(scStudentsData),
-          extractTotal(dropoutsData),
-          extractTotal(schoolsData),
-          extractTotal(competitiveExamsData),
-          extractTotal(boardPrepData),
-        ].reduce((a, b) => a + b, 0),
-        studyCenters: extractTotal(studyCentersData),
-        scStudents: extractTotal(scStudentsData),
-        dropoutRecovery: extractTotal(dropoutsData),
-        schools: extractTotal(schoolsData),
-        competitiveExams: extractTotal(competitiveExamsData),
-        boardPreparation: extractTotal(boardPrepData),
+        totalStudents: moduleBreakdown.education || 0,
+        studyCenters: moduleDetails.studyCenters || 0,
+        scStudents: moduleDetails.scStudents || 0,
+        dropoutRecovery: moduleDetails.dropouts || 0,
+        schools: moduleDetails.schools || 0,
+        competitiveExams: moduleDetails.competitiveExams || 0,
+        boardPreparation: moduleDetails.boardPreparation || 0,
       };
 
       const socialJusticeStats = {
-        totalCases: [
-          extractTotal(cbucboData),
-          extractTotal(entitlementsData),
-          extractTotal(legalAidData),
-          extractTotal(workshopsData),
-        ].reduce((a, b) => a + b, 0),
-        cbucboDetails: extractTotal(cbucboData),
-        entitlements: extractTotal(entitlementsData),
-        legalAidServices: extractTotal(legalAidData),
-        workshops: extractTotal(workshopsData),
+        totalCases: moduleBreakdown.socialJustice || 0,
+        cbucboDetails: moduleDetails.cbucbo || 0,
+        entitlements: moduleDetails.entitlements || 0,
+        legalAidServices: moduleDetails.legalAid || 0,
+        workshops: moduleDetails.workshops || 0,
       };
 
       setModuleStats({
@@ -365,125 +320,65 @@ const Dashboard = () => {
         socialJustice: socialJusticeStats,
       });
 
-      // Calculate real overview stats
-      const totalBeneficiaries =
-        healthStats.totalCases +
-        educationStats.totalStudents +
-        socialJusticeStats.totalCases;
-
-      // Calculate active cases (this is a simplified calculation - you can enhance based on status)
-      const activeCases = Math.floor(totalBeneficiaries * 0.6); // Estimate 60% active
-      const completedCases = Math.floor(totalBeneficiaries * 0.25); // Estimate 25% completed
-      const urgentCases = Math.floor(totalBeneficiaries * 0.08); // Estimate 8% urgent
-
-      setOverviewStats({
-        totalBeneficiaries,
-        activeCases,
-        pendingLegalAid: socialJusticeStats.legalAidServices,
-        completedThisMonth: completedCases,
-        recentBeneficiaries: Math.min(totalBeneficiaries, 12), // Last 12 as recent
-        urgentCases,
-      });
-
-      // Set chart data with real module distribution
-      const moduleDistribution = [
-        {
-          name: "Health",
-          value: healthStats.totalCases,
-          color: COLORS.danger,
-          percentage: Math.round(
-            (healthStats.totalCases / (totalBeneficiaries || 1)) * 100
-          ),
-        },
-        {
-          name: "Education",
-          value: educationStats.totalStudents,
-          color: COLORS.secondary,
-          percentage: Math.round(
-            (educationStats.totalStudents / (totalBeneficiaries || 1)) * 100
-          ),
-        },
-        {
-          name: "Social Justice",
-          value: socialJusticeStats.totalCases,
-          color: COLORS.primary,
-          percentage: Math.round(
-            (socialJusticeStats.totalCases / (totalBeneficiaries || 1)) * 100
-          ),
-        },
-      ].filter((item) => item.value > 0); // Only show modules with data
-
-      const monthlyTrends = [
-        { month: "Jan", health: 45, education: 32, socialJustice: 28 },
-        { month: "Feb", health: 52, education: 38, socialJustice: 35 },
-        { month: "Mar", health: 48, education: 42, socialJustice: 31 },
-        { month: "Apr", health: 61, education: 45, socialJustice: 38 },
-        { month: "May", health: 58, education: 49, socialJustice: 42 },
-        { month: "Jun", health: 65, education: 52, socialJustice: 45 },
-      ];
-
+      // Set chart data from real analytics
       setChartData({
-        monthlyTrends,
-        moduleDistribution,
-        genderDistribution: [
-          { name: "Female", value: 68, color: COLORS.accentLight },
-          { name: "Male", value: 32, color: COLORS.primary },
-        ],
-        ageDistribution: [
-          { name: "18-25", value: 22 },
-          { name: "26-35", value: 35 },
-          { name: "36-45", value: 28 },
-          { name: "46-55", value: 12 },
-          { name: "55+", value: 3 },
-        ],
-        statusDistribution: [
-          { name: "Active", value: activeCases, color: COLORS.secondary },
-          {
-            name: "Pending",
-            value: socialJusticeStats.legalAidServices,
-            color: COLORS.accent,
-          },
-          { name: "Completed", value: completedCases, color: COLORS.primary },
-          { name: "On Hold", value: urgentCases, color: COLORS.mediumLight },
-        ],
+        monthlyTrends: data.charts.monthlyTrends || [],
+        moduleDistribution: (data.charts.moduleDistribution || []).map((item, index) => ({
+          ...item,
+          color: index === 0 ? COLORS.health : index === 1 ? COLORS.education : COLORS.socialJustice
+        })),
+        genderDistribution: (data.charts.genderDistribution || []).map((item, index) => ({
+          ...item,
+          color: index === 0 ? COLORS.accentLight : COLORS.primary
+        })),
+        ageDistribution: data.charts.ageDistribution || [],
+        statusDistribution: (data.charts.statusDistribution || []).map((item, index) => ({
+          ...item,
+          color: [COLORS.secondary, COLORS.accent, COLORS.primary, COLORS.mediumLight][index] || COLORS.primary
+        })),
       });
 
       // Set recent activities
-      if (activitiesData.status === "fulfilled") {
-        setRecentActivities(activitiesData.value?.data?.activities || []);
-      }
+      setRecentActivities(data.recentActivities || []);
 
-      // Generate performance data for comparison
+      // Set quick insights
+      // Set quick insights
+      setQuickInsights(data.quickInsights || []);
+
+      // Load saved targets from localStorage
+      const savedTargets = JSON.parse(localStorage.getItem("performance_targets") || "{}");
+      const healthTarget = savedTargets.health || Math.max(100, healthStats.totalCases * 1.2);
+      const educationTarget = savedTargets.education || Math.max(150, educationStats.totalStudents * 1.2);
+      const socialJusticeTarget = savedTargets.socialJustice || Math.max(80, socialJusticeStats.totalCases * 1.2);
+
+      setTargetInputs({
+        health: Math.round(healthTarget),
+        education: Math.round(educationTarget),
+        socialJustice: Math.round(socialJusticeTarget),
+      });
+
+      // Generate performance data for comparison using actual module totals
       setPerformanceData([
         {
-          category: "Health Camps",
-          target: 100,
-          completed: healthStats.healthCamps,
-          pending: Math.max(0, 100 - healthStats.healthCamps),
+          id: "health",
+          category: "Health Module Total",
+          target: Math.round(healthTarget),
+          completed: healthStats.totalCases,
+          pending: Math.max(0, Math.round(healthTarget) - healthStats.totalCases),
         },
         {
-          category: "SC Students",
-          target: 150,
-          completed: educationStats.scStudents,
-          pending: Math.max(0, 150 - educationStats.scStudents),
+          id: "education",
+          category: "Education Module Total",
+          target: Math.round(educationTarget),
+          completed: educationStats.totalStudents,
+          pending: Math.max(0, Math.round(educationTarget) - educationStats.totalStudents),
         },
         {
-          category: "Entitlements",
-          target: 80,
-          completed: socialJusticeStats.entitlements,
-          pending: Math.max(0, 80 - socialJusticeStats.entitlements),
-        },
-        {
-          category: "Study Centers",
-          target: 50,
-          completed: educationStats.studyCenters,
-          pending: Math.max(0, 50 - educationStats.studyCenters),
-        },
-        {
-          category: "Legal Aid",
-          target: 60,
-          completed: socialJusticeStats.legalAidServices,
-          pending: Math.max(0, 60 - socialJusticeStats.legalAidServices),
+          id: "socialJustice",
+          category: "Social Justice Total",
+          target: Math.round(socialJusticeTarget),
+          completed: socialJusticeStats.totalCases,
+          pending: Math.max(0, Math.round(socialJusticeTarget) - socialJusticeStats.totalCases),
         },
       ]);
     } catch (error) {
@@ -526,7 +421,11 @@ const Dashboard = () => {
   // Module Card Component with expansion
   const ModuleCard = ({ title, icon: Icon, stats, color, module }) => {
     const isExpanded = expandedModules[module];
-    const total = Object.values(stats).reduce((a, b) => a + b, 0);
+    const total = stats.totalCases || stats.totalStudents || 0;
+    
+    const categoryEntries = Object.entries(stats).filter(
+      ([key]) => key !== "totalCases" && key !== "totalStudents"
+    );
 
     return (
       <Card
@@ -558,7 +457,7 @@ const Dashboard = () => {
               <div>
                 <CardTitle className="text-lg font-semibold">{title}</CardTitle>
                 <CardDescription className="text-xs mt-1">
-                  {Object.keys(stats).length} categories
+                  {categoryEntries.length} categories
                 </CardDescription>
               </div>
             </div>
@@ -572,7 +471,7 @@ const Dashboard = () => {
         {isExpanded && (
           <CardContent className="pt-0">
             <div className="grid grid-cols-2 gap-3 mt-2">
-              {Object.entries(stats).map(([key, value]) => (
+              {categoryEntries.map(([key, value]) => (
                 <div
                   key={key}
                   className={`p-3 rounded-lg border ${
@@ -677,9 +576,25 @@ const Dashboard = () => {
   const PerformanceTable = () => (
     <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Zap className="h-5 w-5" />
-          Performance Overview
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            Performance Overview
+          </div>
+          <Button
+            variant={isEditingTargets ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              if (isEditingTargets) {
+                // Save
+                localStorage.setItem("performance_targets", JSON.stringify(targetInputs));
+                fetchDashboardData();
+              }
+              setIsEditingTargets(!isEditingTargets);
+            }}
+          >
+            {isEditingTargets ? "Save Targets" : "Edit Targets"}
+          </Button>
         </CardTitle>
         <CardDescription>
           Target vs. Completed across key programs
@@ -703,9 +618,7 @@ const Dashboard = () => {
             </thead>
             <tbody>
               {performanceData.map((row) => {
-                const percentage = Math.round(
-                  (row.completed / row.target) * 100
-                );
+                const percentage = row.target > 0 ? Math.round((row.completed / row.target) * 100) : 0;
                 const isComplete = percentage >= 100;
                 return (
                   <tr
@@ -713,7 +626,18 @@ const Dashboard = () => {
                     className="border-b hover:bg-secondary"
                   >
                     <td className="py-3 px-4 font-medium">{row.category}</td>
-                    <td className="text-center py-3 px-4">{row.target}</td>
+                    <td className="text-center py-3 px-4">
+                      {isEditingTargets ? (
+                        <Input
+                          type="number"
+                          className="w-20 h-8 text-center mx-auto"
+                          value={targetInputs[row.id] || ""}
+                          onChange={(e) => setTargetInputs({ ...targetInputs, [row.id]: parseInt(e.target.value) || 0 })}
+                        />
+                      ) : (
+                        row.target
+                      )}
+                    </td>
                     <td className="text-center py-3 px-4 font-semibold">
                       {row.completed}
                     </td>
@@ -798,7 +722,7 @@ const Dashboard = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-                  Seva Kendra Dashboard
+                  Seva Kendra Calcutta
                 </h1>
                 <p className="text-muted-foreground mt-1">
                   Comprehensive overview of all programs and beneficiary services
@@ -865,6 +789,27 @@ const Dashboard = () => {
                 bgColor="bg-red-500"
               />
             </div>
+
+            {urgentAlerts.length > 0 && (
+              <Card className="border-red-300">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-red-700">
+                    <AlertTriangle className="h-5 w-5" />
+                    Urgent Follow-Up Alerts
+                  </CardTitle>
+                  <CardDescription>
+                    {urgentAlerts.length} urgent case(s) have no updates in the last 2 days.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {urgentAlerts.slice(0, 5).map((alert) => (
+                    <div key={alert.id} className="text-sm">
+                      <span className="font-semibold">{alert.recordName}</span> - stale for {alert.staleDays} day(s)
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Module Overview Cards - Expandable */}
             <div>
@@ -1105,47 +1050,59 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="p-3 bg-blue-950/50 border-l-4 border-blue-400 rounded-lg shadow-sm">
-                      <p className="text-sm font-semibold text-blue-300">
-                        ✓ Health Module Leading
-                      </p>
-                      <p className="text-xs text-blue-200 mt-1">
-                        Health programs show highest engagement with{" "}
-                        {moduleStats.health.totalCases || 0} total cases
-                      </p>
-                    </div>
-                    <div className="p-3 bg-green-950/50 border-l-4 border-green-400 rounded-lg shadow-sm">
-                      <p className="text-sm font-semibold text-green-300">
-                        ✓ Case Completion Rate
-                      </p>
-                      <p className="text-xs text-green-200 mt-1">
-                        {Math.round(
-                          ((overviewStats.completedThisMonth || 0) /
-                            (overviewStats.totalBeneficiaries || 1)) *
-                            100
-                        )}
-                        % of cases completed this period
-                      </p>
-                    </div>
-                    <div className="p-3 bg-violet-950/50 border-l-4 border-violet-400 rounded-lg shadow-sm">
-                      <p className="text-sm font-semibold text-violet-300">
-                        → Focus Area: Education
-                      </p>
-                      <p className="text-xs text-violet-200 mt-1">
-                        Education module requires attention for growth -
-                        currently {moduleStats.education.totalStudents || 0}{" "}
-                        beneficiaries
-                      </p>
-                    </div>
-                    <div className="p-3 bg-amber-900/80 border-l-4 border-amber-500 rounded-lg shadow-sm">
-                      <p className="text-sm font-semibold text-amber-100">
-                        ! Urgent Cases
-                      </p>
-                      <p className="text-xs text-amber-200 mt-1">
-                        {overviewStats.urgentCases || 0} urgent cases require
-                        immediate attention
-                      </p>
-                    </div>
+                    {quickInsights.length > 0 ? (
+                      quickInsights.map((insight, index) => (
+                        <div
+                          key={index}
+                          className={`p-3 border-l-4 rounded-lg shadow-sm ${
+                            insight.type === "success"
+                              ? "bg-green-950/50 border-green-400"
+                              : insight.type === "warning"
+                              ? "bg-amber-900/80 border-amber-500"
+                              : insight.type === "error"
+                              ? "bg-red-900/80 border-red-500"
+                              : "bg-blue-950/50 border-blue-400"
+                          }`}
+                        >
+                          <p
+                            className={`text-sm font-semibold ${
+                              insight.type === "success"
+                                ? "text-green-300"
+                                : insight.type === "warning"
+                                ? "text-amber-100"
+                                : insight.type === "error"
+                                ? "text-red-100"
+                                : "text-blue-300"
+                            }`}
+                          >
+                            {insight.type === "success" ? "✓" : insight.type === "error" ? "!" : "→"} {insight.title}
+                          </p>
+                          <p
+                            className={`text-xs mt-1 ${
+                              insight.type === "success"
+                                ? "text-green-200"
+                                : insight.type === "warning"
+                                ? "text-amber-200"
+                                : insight.type === "error"
+                                ? "text-red-200"
+                                : "text-blue-200"
+                            }`}
+                          >
+                            {insight.description}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-3 bg-blue-950/50 border-l-4 border-blue-400 rounded-lg shadow-sm">
+                        <p className="text-sm font-semibold text-blue-300">
+                          ✓ Health Module Leading
+                        </p>
+                        <p className="text-xs text-blue-200 mt-1">
+                          Health programs show highest engagement with{" "}
+                          {moduleStats.health.totalCases || 0} total cases
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

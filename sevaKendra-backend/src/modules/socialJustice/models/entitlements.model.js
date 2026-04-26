@@ -119,6 +119,24 @@ const entitlementsSchema = new mongoose.Schema(
         default: "Pending",
       },
     },
+    documentation: {
+      aadhaar: { type: Boolean, default: false },
+      voterId: { type: Boolean, default: false },
+      rationCard: { type: Boolean, default: false },
+      birthCertificate: { type: Boolean, default: false },
+      casteCertificate: { type: Boolean, default: false },
+      incomeCertificate: { type: Boolean, default: false },
+      other: { type: String, trim: true },
+    },
+    governmentSchemes: {
+      oldAgePension: { type: Boolean, default: false },
+      widowPension: { type: Boolean, default: false },
+      disabilityPension: { type: Boolean, default: false },
+      healthScheme: { type: Boolean, default: false },
+      pdsFoodSecurity: { type: Boolean, default: false },
+      housingScheme: { type: Boolean, default: false },
+      other: { type: String, trim: true },
+    },
 
     // Progress Reporting (2025-2026)
     progressReporting: {

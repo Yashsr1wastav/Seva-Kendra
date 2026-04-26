@@ -11,6 +11,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -48,6 +62,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   Users,
+  Check,
+  ChevronsUpDown,
   Plus,
   Search,
   Filter,
@@ -60,8 +76,72 @@ import {
 import { scStudentAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import { getWardOptions } from "../lib/formOptions";
+
+const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const selectedWard = options.find((ward) => ward.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-list`}
+          className="h-9 w-full justify-between bg-input px-3 text-left text-sm font-normal text-foreground"
+        >
+          {selectedWard ? selectedWard.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Type ward number..."
+            autoFocus
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <CommandList
+            id={`${id}-list`}
+            className="max-h-56"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>No ward found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((ward) => (
+                <CommandItem
+                  key={ward.value}
+                  value={`${ward.label} ${ward.numberValue}`}
+                  onSelect={() => {
+                    onChange(ward.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === ward.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {ward.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const SCStudents = () => {
+  const wardOptions = getWardOptions();
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [scStudents, setScStudents] = useState([]);
@@ -92,8 +172,15 @@ const SCStudents = () => {
     name: "",
     gender: "",
     age: "",
+    classGrade: "",
+    studentStatus: "",
+    schoolName: "",
     contactNo: "",
     headOfHousehold: "",
+    fatherName: "",
+    motherName: "",
+    fatherOccupation: "",
+    motherOccupation: "",
     wardNo: "",
     habitation: "",
     projectResponsible: "",
@@ -113,6 +200,8 @@ const SCStudents = () => {
     progressReporting: {},
     photoDocumentation: {},
   });
+
+  const isValidMobileNumber = (value) => /^[6-9]\d{9}$/.test(value);
 
   // Fetch SC students
   const fetchScStudents = async () => {
@@ -158,6 +247,36 @@ const SCStudents = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (!formData.householdCode?.trim()) {
+        toast.error("Household code is required");
+        return;
+      }
+
+      if (!formData.name?.trim()) {
+        toast.error("Name is required");
+        return;
+      }
+
+      if (!formData.wardNo?.trim()) {
+        toast.error("Ward number is required");
+        return;
+      }
+
+      if (!formData.projectResponsible?.trim()) {
+        toast.error("Project responsible is required");
+        return;
+      }
+
+      if (formData.contactNo && !isValidMobileNumber(formData.contactNo)) {
+        toast.error("Contact number must be a valid 10-digit mobile number");
+        return;
+      }
+
+      if (formData.age && (Number(formData.age) < 0 || Number(formData.age) > 120)) {
+        toast.error("Age must be between 0 and 120");
+        return;
+      }
+
       if (selectedStudent) {
         await scStudentAPI.update(selectedStudent._id, formData);
         toast.success("SC student updated successfully");
@@ -171,7 +290,7 @@ const SCStudents = () => {
       fetchScStudents();
       resetForm();
     } catch (error) {
-      toast.error(error.response?.data?.message || "An error occurred");
+      toast.error(error?.message || "An error occurred");
     }
   };
 
@@ -193,8 +312,15 @@ const SCStudents = () => {
       name: "",
       gender: "",
       age: "",
+      classGrade: "",
+      studentStatus: "",
+      schoolName: "",
       contactNo: "",
       headOfHousehold: "",
+      fatherName: "",
+      motherName: "",
+      fatherOccupation: "",
+      motherOccupation: "",
       wardNo: "",
       habitation: "",
       projectResponsible: "",
@@ -340,6 +466,8 @@ const SCStudents = () => {
                         <TableHead>Gender</TableHead>
                         <TableHead>Age</TableHead>
                         <TableHead>Ward No</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Class/Grade</TableHead>
                         <TableHead>Contact</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
@@ -358,6 +486,16 @@ const SCStudents = () => {
                           <TableCell>
                             <Badge variant="outline">{student.wardNo}</Badge>
                           </TableCell>
+                          <TableCell>
+                            {student.studentStatus ? (
+                              <Badge variant="secondary">
+                                {student.studentStatus}
+                              </Badge>
+                            ) : (
+                              "-"
+                            )}
+                          </TableCell>
+                          <TableCell>{student.classGrade || "-"}</TableCell>
                           <TableCell>{student.contactNo}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -519,7 +657,7 @@ const SCStudents = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="age">Age *</Label>
+                      <Label htmlFor="age">Age</Label>
                       <Input
                         id="age"
                         type="number"
@@ -527,11 +665,55 @@ const SCStudents = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, age: e.target.value })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="contactNo">Contact Number *</Label>
+                      <Label htmlFor="classGrade">Class/Grade</Label>
+                      <Input
+                        id="classGrade"
+                        value={formData.classGrade}
+                        onChange={(e) =>
+                          setFormData({ ...formData, classGrade: e.target.value })
+                        }
+                        placeholder="Enter class/grade"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="studentStatus">Status</Label>
+                      <Select
+                        value={formData.studentStatus || "none"}
+                        onValueChange={(value) =>
+                          setFormData({
+                            ...formData,
+                            studentStatus: value === "none" ? "" : value,
+                          })
+                        }
+                      >
+                        <SelectTrigger id="studentStatus">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Not specified</SelectItem>
+                          <SelectItem value="Dropout">Dropout</SelectItem>
+                          <SelectItem value="School-Going">School-Going</SelectItem>
+                          <SelectItem value="Study Centre Attendee">
+                            Study Centre Attendee
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="schoolName">School Name</Label>
+                      <Input
+                        id="schoolName"
+                        value={formData.schoolName}
+                        onChange={(e) =>
+                          setFormData({ ...formData, schoolName: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contactNo">Contact Number</Label>
                       <Input
                         id="contactNo"
                         value={formData.contactNo}
@@ -541,12 +723,11 @@ const SCStudents = () => {
                             contactNo: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="headOfHousehold">
-                        Head of Household *
+                        Head of Household
                       </Label>
                       <Input
                         id="headOfHousehold"
@@ -557,36 +738,68 @@ const SCStudents = () => {
                             headOfHousehold: e.target.value,
                           })
                         }
-                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fatherName">Father Name</Label>
+                      <Input
+                        id="fatherName"
+                        value={formData.fatherName}
+                        onChange={(e) =>
+                          setFormData({ ...formData, fatherName: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fatherOccupation">Father Occupation</Label>
+                      <Input
+                        id="fatherOccupation"
+                        value={formData.fatherOccupation}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            fatherOccupation: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="motherName">Mother Name</Label>
+                      <Input
+                        id="motherName"
+                        value={formData.motherName}
+                        onChange={(e) =>
+                          setFormData({ ...formData, motherName: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="motherOccupation">Mother Occupation</Label>
+                      <Input
+                        id="motherOccupation"
+                        value={formData.motherOccupation}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            motherOccupation: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
                       <Label htmlFor="wardNo">Ward No *</Label>
-                      <Select
+                      <WardCombobox
+                        id="wardNo"
                         value={formData.wardNo}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           setFormData({ ...formData, wardNo: value })
                         }
-                      >
-                        <SelectTrigger id="wardNo">
-                          <SelectValue placeholder="Select ward" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ward 1">Ward 1</SelectItem>
-                          <SelectItem value="Ward 2">Ward 2</SelectItem>
-                          <SelectItem value="Ward 3">Ward 3</SelectItem>
-                          <SelectItem value="Ward 4">Ward 4</SelectItem>
-                          <SelectItem value="Ward 5">Ward 5</SelectItem>
-                          <SelectItem value="Ward 6">Ward 6</SelectItem>
-                          <SelectItem value="Ward 7">Ward 7</SelectItem>
-                          <SelectItem value="Ward 8">Ward 8</SelectItem>
-                          <SelectItem value="Ward 9">Ward 9</SelectItem>
-                          <SelectItem value="Ward 10">Ward 10</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        options={wardOptions}
+                        placeholder="Select ward"
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="habitation">Habitation *</Label>
+                      <Label htmlFor="habitation">Habitation</Label>
                       <Input
                         id="habitation"
                         value={formData.habitation}
@@ -596,7 +809,6 @@ const SCStudents = () => {
                             habitation: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
@@ -616,13 +828,12 @@ const SCStudents = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="category">Category *</Label>
+                      <Label htmlFor="category">Category</Label>
                       <Select
                         value={formData.category}
                         onValueChange={(value) =>
                           setFormData({ ...formData, category: value })
                         }
-                        required
                       >
                         <SelectTrigger id="category">
                           <SelectValue placeholder="Select category" />
@@ -639,7 +850,7 @@ const SCStudents = () => {
                     </div>
                     <div>
                       <Label htmlFor="dateOfReporting">
-                        Date of Reporting *
+                        Date of Reporting
                       </Label>
                       <Input
                         id="dateOfReporting"
@@ -651,11 +862,10 @@ const SCStudents = () => {
                             dateOfReporting: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="reportedBy">Reported By *</Label>
+                      <Label htmlFor="reportedBy">Reported By</Label>
                       <Input
                         id="reportedBy"
                         value={formData.reportedBy}
@@ -665,11 +875,10 @@ const SCStudents = () => {
                             reportedBy: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <Label htmlFor="natureOfIssue">Nature of Issue *</Label>
+                      <Label htmlFor="natureOfIssue">Nature of Issue</Label>
                       <Textarea
                         id="natureOfIssue"
                         value={formData.natureOfIssue}
@@ -679,7 +888,6 @@ const SCStudents = () => {
                             natureOfIssue: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                   </div>
@@ -751,7 +959,7 @@ const SCStudents = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="editAge">Age *</Label>
+                      <Label htmlFor="editAge">Age</Label>
                       <Input
                         id="editAge"
                         type="number"
@@ -759,11 +967,55 @@ const SCStudents = () => {
                         onChange={(e) =>
                           setFormData({ ...formData, age: e.target.value })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="editContactNo">Contact Number *</Label>
+                      <Label htmlFor="editClassGrade">Class/Grade</Label>
+                      <Input
+                        id="editClassGrade"
+                        value={formData.classGrade}
+                        onChange={(e) =>
+                          setFormData({ ...formData, classGrade: e.target.value })
+                        }
+                        placeholder="Enter class/grade"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editStudentStatus">Status</Label>
+                      <Select
+                        value={formData.studentStatus || "none"}
+                        onValueChange={(value) =>
+                          setFormData({
+                            ...formData,
+                            studentStatus: value === "none" ? "" : value,
+                          })
+                        }
+                      >
+                        <SelectTrigger id="editStudentStatus">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Not specified</SelectItem>
+                          <SelectItem value="Dropout">Dropout</SelectItem>
+                          <SelectItem value="School-Going">School-Going</SelectItem>
+                          <SelectItem value="Study Centre Attendee">
+                            Study Centre Attendee
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="editSchoolName">School Name</Label>
+                      <Input
+                        id="editSchoolName"
+                        value={formData.schoolName}
+                        onChange={(e) =>
+                          setFormData({ ...formData, schoolName: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editContactNo">Contact Number</Label>
                       <Input
                         id="editContactNo"
                         value={formData.contactNo}
@@ -773,12 +1025,11 @@ const SCStudents = () => {
                             contactNo: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="editHeadOfHousehold">
-                        Head of Household *
+                        Head of Household
                       </Label>
                       <Input
                         id="editHeadOfHousehold"
@@ -789,36 +1040,72 @@ const SCStudents = () => {
                             headOfHousehold: e.target.value,
                           })
                         }
-                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editFatherName">Father Name</Label>
+                      <Input
+                        id="editFatherName"
+                        value={formData.fatherName}
+                        onChange={(e) =>
+                          setFormData({ ...formData, fatherName: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editFatherOccupation">
+                        Father Occupation
+                      </Label>
+                      <Input
+                        id="editFatherOccupation"
+                        value={formData.fatherOccupation}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            fatherOccupation: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editMotherName">Mother Name</Label>
+                      <Input
+                        id="editMotherName"
+                        value={formData.motherName}
+                        onChange={(e) =>
+                          setFormData({ ...formData, motherName: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editMotherOccupation">
+                        Mother Occupation
+                      </Label>
+                      <Input
+                        id="editMotherOccupation"
+                        value={formData.motherOccupation}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            motherOccupation: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
                       <Label htmlFor="editWardNo">Ward No *</Label>
-                      <Select
+                      <WardCombobox
+                        id="editWardNo"
                         value={formData.wardNo}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           setFormData({ ...formData, wardNo: value })
                         }
-                      >
-                        <SelectTrigger id="editWardNo">
-                          <SelectValue placeholder="Select ward" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ward 1">Ward 1</SelectItem>
-                          <SelectItem value="Ward 2">Ward 2</SelectItem>
-                          <SelectItem value="Ward 3">Ward 3</SelectItem>
-                          <SelectItem value="Ward 4">Ward 4</SelectItem>
-                          <SelectItem value="Ward 5">Ward 5</SelectItem>
-                          <SelectItem value="Ward 6">Ward 6</SelectItem>
-                          <SelectItem value="Ward 7">Ward 7</SelectItem>
-                          <SelectItem value="Ward 8">Ward 8</SelectItem>
-                          <SelectItem value="Ward 9">Ward 9</SelectItem>
-                          <SelectItem value="Ward 10">Ward 10</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        options={wardOptions}
+                        placeholder="Select ward"
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="editHabitation">Habitation *</Label>
+                      <Label htmlFor="editHabitation">Habitation</Label>
                       <Input
                         id="editHabitation"
                         value={formData.habitation}
@@ -828,7 +1115,6 @@ const SCStudents = () => {
                             habitation: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
@@ -848,13 +1134,12 @@ const SCStudents = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="editCategory">Category *</Label>
+                      <Label htmlFor="editCategory">Category</Label>
                       <Select
                         value={formData.category}
                         onValueChange={(value) =>
                           setFormData({ ...formData, category: value })
                         }
-                        required
                       >
                         <SelectTrigger id="editCategory">
                           <SelectValue placeholder="Select category" />
@@ -871,7 +1156,7 @@ const SCStudents = () => {
                     </div>
                     <div>
                       <Label htmlFor="editDateOfReporting">
-                        Date of Reporting *
+                        Date of Reporting
                       </Label>
                       <Input
                         id="editDateOfReporting"
@@ -883,11 +1168,10 @@ const SCStudents = () => {
                             dateOfReporting: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="editReportedBy">Reported By *</Label>
+                      <Label htmlFor="editReportedBy">Reported By</Label>
                       <Input
                         id="editReportedBy"
                         value={formData.reportedBy}
@@ -897,12 +1181,11 @@ const SCStudents = () => {
                             reportedBy: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div className="md:col-span-2">
                       <Label htmlFor="editNatureOfIssue">
-                        Nature of Issue *
+                        Nature of Issue
                       </Label>
                       <Textarea
                         id="editNatureOfIssue"
@@ -913,7 +1196,6 @@ const SCStudents = () => {
                             natureOfIssue: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                   </div>
@@ -980,6 +1262,34 @@ const SCStudents = () => {
                         <div>
                           <Label className="font-semibold">Ward No</Label>
                           <p>{selectedStudent.wardNo}</p>
+                        </div>
+                        <div>
+                          <Label className="font-semibold">Class/Grade</Label>
+                          <p>{selectedStudent.classGrade || "N/A"}</p>
+                        </div>
+                        <div>
+                          <Label className="font-semibold">Status</Label>
+                          <p>{selectedStudent.studentStatus || "N/A"}</p>
+                        </div>
+                        <div>
+                          <Label className="font-semibold">School Name</Label>
+                          <p>{selectedStudent.schoolName || "N/A"}</p>
+                        </div>
+                        <div>
+                          <Label className="font-semibold">Father Name</Label>
+                          <p>{selectedStudent.fatherName || "N/A"}</p>
+                        </div>
+                        <div>
+                          <Label className="font-semibold">Father Occupation</Label>
+                          <p>{selectedStudent.fatherOccupation || "N/A"}</p>
+                        </div>
+                        <div>
+                          <Label className="font-semibold">Mother Name</Label>
+                          <p>{selectedStudent.motherName || "N/A"}</p>
+                        </div>
+                        <div>
+                          <Label className="font-semibold">Mother Occupation</Label>
+                          <p>{selectedStudent.motherOccupation || "N/A"}</p>
                         </div>
                         <div>
                           <Label className="font-semibold">Habitation</Label>

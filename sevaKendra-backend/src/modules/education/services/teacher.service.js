@@ -100,9 +100,11 @@ class TeacherService {
   // Create a new teacher
   async createTeacher(data, userId) {
     // Check if teacher ID already exists
-    const existingTeacher = await Teacher.findOne({ teacherId: data.teacherId });
-    if (existingTeacher) {
-      throw new APIError("Teacher ID already exists", 400);
+    if (data.teacherId) {
+      const existingTeacher = await Teacher.findOne({ teacherId: data.teacherId });
+      if (existingTeacher) {
+        throw new APIError("Teacher ID already exists", 400);
+      }
     }
 
     const teacherData = {

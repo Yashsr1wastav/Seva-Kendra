@@ -16,6 +16,10 @@ router.get("/", trackingController.getAllTracking);
 // Get tracking statistics
 router.get("/stats", trackingController.getTrackingStats);
 
+// Urgent case endpoints
+router.get("/urgent-cases", trackingController.getUrgentCases);
+router.get("/urgent-cases/alerts", trackingController.getUrgentCaseAlerts);
+
 // Get overdue follow-ups
 router.get("/overdue", trackingController.getOverdueTracking);
 

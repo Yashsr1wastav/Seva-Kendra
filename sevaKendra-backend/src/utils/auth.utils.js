@@ -10,27 +10,23 @@ export const generateToken = async (data, expiryTime) => {
 };
 
 export const decodeToken = async (req, res, next) => {
-  let token;
-  if (req.headers.authorization?.startsWith("Bearer")) {
-    try {
-      token = req.headers.authorization?.split(" ")[1];
-      if (!token) {
-        res.status(401).send({ message: "Not Authorized,No token" });
-      }
-
-      const decoded = jwt.verify(token, appConfig.jwtSecret);
-
-      if (decoded) {
-        return decoded;
-      }
-
-      next();
-    } catch (error) {
-      res.status(401).send({ message: "Not Authorized" });
-    }
+  if (!req.headers.authorization?.startsWith("Bearer")) {
+    res.status(401).send({ message: "Not Authorized,No token" });
+    return null;
   }
+
+  const token = req.headers.authorization.split(" ")[1];
   if (!token) {
     res.status(401).send({ message: "Not Authorized,No token" });
+    return null;
+  }
+
+  try {
+    const decoded = jwt.verify(token, appConfig.jwtSecret);
+    return decoded || null;
+  } catch (error) {
+    res.status(401).send({ message: "Not Authorized" });
+    return null;
   }
 };
 

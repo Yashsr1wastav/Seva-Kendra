@@ -110,6 +110,10 @@ const elderlySchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    natureOfIssue: {
+      type: [String],
+      default: [],
+    },
     statusOfBankAccount: {
       type: String,
       enum: ["Available", "Not Available", "In Process", "Blocked", "Other"],

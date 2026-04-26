@@ -27,6 +27,7 @@ import {
   Pill,
   Cross,
   ClipboardCheck,
+  AlertTriangle,
   BookOpen,
   Award,
   Settings,
@@ -209,6 +210,20 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeItem = null }) => {
             >
               <ClipboardCheck className="mr-3 h-5 w-5" />
               Follow-ups & Tracking
+            </Link>
+          </div>
+
+          <div className="px-4 mb-6">
+            <Link
+              to="/tracking/urgent-cases"
+              className={`flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                location.pathname === "/tracking/urgent-cases"
+                  ? "bg-primary text-primary-foreground shadow-lg"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground hover:shadow-sm"
+              }`}
+            >
+              <AlertTriangle className="mr-3 h-5 w-5" />
+              Urgent Cases
             </Link>
           </div>
 

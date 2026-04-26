@@ -8,6 +8,7 @@ import educationRouter from "./education/education.router.js";
 import healthRouter from "./health/health.router.js";
 import socialJusticeRouter from "./socialJustice/socialJustice.router.js";
 import trackingRouter from "../modules/tracking/tracking.router.js";
+import analyticsRouter from "../modules/analytics/analytics.router.js";
 
 const router = Router();
 
@@ -31,5 +32,8 @@ router.use("/social-justice", socialJusticeRouter);
 
 // Tracking/Follow-up routes
 router.use("/tracking", trackingRouter);
+
+// Analytics/Dashboard routes
+router.use("/analytics", analyticsRouter);
 
 export default router;

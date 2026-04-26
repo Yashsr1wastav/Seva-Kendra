@@ -11,6 +11,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -49,6 +63,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   Users,
+  Check,
+  ChevronsUpDown,
   Plus,
   Search,
   Filter,
@@ -62,8 +78,72 @@ import {
 import { elderlyAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import { getWardOptions } from "../lib/formOptions";
+
+const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const selectedWard = options.find((ward) => ward.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-list`}
+          className="h-9 w-full justify-between bg-input px-3 text-left text-sm font-normal text-foreground"
+        >
+          {selectedWard ? selectedWard.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Type ward number..."
+            autoFocus
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <CommandList
+            id={`${id}-list`}
+            className="max-h-56"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>No ward found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((ward) => (
+                <CommandItem
+                  key={ward.value}
+                  value={`${ward.label} ${ward.numberValue}`}
+                  onSelect={() => {
+                    onChange(ward.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === ward.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {ward.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const Elderly = () => {
+  const wardOptions = getWardOptions();
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [elderly, setElderly] = useState([]);
@@ -103,6 +183,7 @@ const Elderly = () => {
     medicalScreeningResults: "",
     dateOfPsychologicalAssessment: "",
     psychologicalScreeningResults: "",
+    natureOfIssue: "",
     statusOfBankAccount: "",
     individualCarePlan: "",
     progressReporting: {},
@@ -138,12 +219,22 @@ const Elderly = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = {
+        ...formData,
+        natureOfIssue: formData.natureOfIssue
+          ? formData.natureOfIssue
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean)
+          : [],
+      };
+
       if (selectedElderly) {
-        await elderlyAPI.update(selectedElderly._id, formData);
+        await elderlyAPI.update(selectedElderly._id, payload);
         toast.success("Elderly record updated successfully");
         setIsEditModalOpen(false);
       } else {
-        await elderlyAPI.create(formData);
+        await elderlyAPI.create(payload);
         toast.success("Elderly record created successfully");
         setIsCreateModalOpen(false);
       }
@@ -191,6 +282,7 @@ const Elderly = () => {
       medicalScreeningResults: "",
       dateOfPsychologicalAssessment: "",
       psychologicalScreeningResults: "",
+      natureOfIssue: "",
       statusOfBankAccount: "",
       individualCarePlan: "",
       progressReporting: {},
@@ -230,6 +322,9 @@ const Elderly = () => {
         : "",
       psychologicalScreeningResults:
         elderlyRecord.psychologicalScreeningResults || "",
+      natureOfIssue: Array.isArray(elderlyRecord.natureOfIssue)
+        ? elderlyRecord.natureOfIssue.join(", ")
+        : elderlyRecord.natureOfIssue || "",
       statusOfBankAccount: elderlyRecord.statusOfBankAccount || "",
       individualCarePlan: elderlyRecord.individualCarePlan || "",
       progressReporting: elderlyRecord.progressReporting || {},
@@ -327,7 +422,7 @@ const Elderly = () => {
                   />
                 </div>
                 <div>
-                  {/* <Label htmlFor="gender">Gender</Label>
+                  <Label htmlFor="gender">Gender</Label>
                   <Select value={filters.gender} onValueChange={(value) => handleFilterChange("gender", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="All Genders" />
@@ -338,28 +433,29 @@ const Elderly = () => {
                       <SelectItem value="Female">Female</SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
-                  </Select> */}
+                  </Select>
                 </div>
                 <div>
-                  {/* <Label htmlFor="wardNo">Ward No</Label>
-                  <Input
+                  <Label htmlFor="wardNo">Ward No</Label>
+                  <WardCombobox
                     id="wardNo"
-                    placeholder="Filter by ward"
                     value={filters.wardNo}
-                    onChange={(e) => handleFilterChange("wardNo", e.target.value)}
-                  /> */}
+                    onChange={(value) => handleFilterChange("wardNo", value)}
+                    options={wardOptions}
+                    placeholder="Filter by ward"
+                  />
                 </div>
                 <div>
-                  {/* <Label htmlFor="habitation">Habitation</Label>
+                  <Label htmlFor="habitation">Habitation</Label>
                   <Input
                     id="habitation"
                     placeholder="Filter by habitation"
                     value={filters.habitation}
                     onChange={(e) => handleFilterChange("habitation", e.target.value)}
-                  /> */}
+                  />
                 </div>
                 <div>
-                  {/* <Label htmlFor="statusOfBankAccount">Bank Account</Label>
+                  <Label htmlFor="statusOfBankAccount">Bank Account</Label>
                   <Select value={filters.statusOfBankAccount} onValueChange={(value) => handleFilterChange("statusOfBankAccount", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="All Statuses" />
@@ -371,12 +467,12 @@ const Elderly = () => {
                       <SelectItem value="In Process">In Process</SelectItem>
                       <SelectItem value="Blocked">Blocked</SelectItem>
                     </SelectContent>
-                  </Select> */}
+                  </Select>
                 </div>
                 <div className="flex items-end">
-                  {/* <Button variant="outline" onClick={clearFilters} className="w-full">
+                  <Button variant="outline" onClick={clearFilters} className="w-full">
                     Clear Filters
-                  </Button> */}
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -410,6 +506,7 @@ const Elderly = () => {
                       <TableHead>Unique ID</TableHead>
                       <TableHead>Age</TableHead>
                       <TableHead>Gender</TableHead>
+                      <TableHead>Nature of Issue</TableHead>
                       <TableHead>Ward/Habitation</TableHead>
                       <TableHead>Contact</TableHead>
                       <TableHead>Bank Account</TableHead>
@@ -419,14 +516,14 @@ const Elderly = () => {
                   <TableBody>
                     {loading ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-4">
+                        <TableCell colSpan={9} className="text-center py-4">
                           <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
                         </TableCell>
                       </TableRow>
                     ) : elderly.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={8}
+                          colSpan={9}
                           className="text-center py-4 text-muted-foreground"
                         >
                           No elderly records found
@@ -444,6 +541,13 @@ const Elderly = () => {
                             <Badge variant="outline">
                               {elderlyRecord.gender}
                             </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <p className="max-w-[200px] truncate">
+                              {Array.isArray(elderlyRecord.natureOfIssue)
+                                ? elderlyRecord.natureOfIssue.join(", ")
+                                : elderlyRecord.natureOfIssue || "N/A"}
+                            </p>
                           </TableCell>
                           <TableCell>
                             Ward {elderlyRecord.wardNo},{" "}
@@ -672,28 +776,15 @@ const Elderly = () => {
               </div>
               <div>
                 <Label htmlFor="wardNo">Ward No *</Label>
-                <Select
+                <WardCombobox
+                  id="wardNo"
                   value={formData.wardNo}
-                  onValueChange={(value) =>
+                  onChange={(value) =>
                     setFormData((prev) => ({ ...prev, wardNo: value }))
                   }
-                >
-                  <SelectTrigger id="wardNo">
-                    <SelectValue placeholder="Select ward" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Ward 1">Ward 1</SelectItem>
-                    <SelectItem value="Ward 2">Ward 2</SelectItem>
-                    <SelectItem value="Ward 3">Ward 3</SelectItem>
-                    <SelectItem value="Ward 4">Ward 4</SelectItem>
-                    <SelectItem value="Ward 5">Ward 5</SelectItem>
-                    <SelectItem value="Ward 6">Ward 6</SelectItem>
-                    <SelectItem value="Ward 7">Ward 7</SelectItem>
-                    <SelectItem value="Ward 8">Ward 8</SelectItem>
-                    <SelectItem value="Ward 9">Ward 9</SelectItem>
-                    <SelectItem value="Ward 10">Ward 10</SelectItem>
-                  </SelectContent>
-                </Select>
+                  options={wardOptions}
+                  placeholder="Select ward"
+                />
               </div>
               <div>
                 <Label htmlFor="habitation">Habitation *</Label>
@@ -827,6 +918,16 @@ const Elderly = () => {
               />
             </div>
             <div>
+              <Label htmlFor="natureOfIssue">Nature of Issue</Label>
+              <Textarea
+                id="natureOfIssue"
+                name="natureOfIssue"
+                value={formData.natureOfIssue || ""}
+                onChange={handleInputChange}
+                placeholder="Enter one or more issues separated by commas"
+              />
+            </div>
+            <div>
               <Label htmlFor="individualCarePlan">Individual Care Plan</Label>
               <Textarea
                 id="individualCarePlan"
@@ -952,28 +1053,15 @@ const Elderly = () => {
               </div>
               <div>
                 <Label htmlFor="edit-wardNo">Ward No *</Label>
-                <Select
+                <WardCombobox
+                  id="edit-wardNo"
                   value={formData.wardNo}
-                  onValueChange={(value) =>
+                  onChange={(value) =>
                     setFormData((prev) => ({ ...prev, wardNo: value }))
                   }
-                >
-                  <SelectTrigger id="edit-wardNo">
-                    <SelectValue placeholder="Select ward" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Ward 1">Ward 1</SelectItem>
-                    <SelectItem value="Ward 2">Ward 2</SelectItem>
-                    <SelectItem value="Ward 3">Ward 3</SelectItem>
-                    <SelectItem value="Ward 4">Ward 4</SelectItem>
-                    <SelectItem value="Ward 5">Ward 5</SelectItem>
-                    <SelectItem value="Ward 6">Ward 6</SelectItem>
-                    <SelectItem value="Ward 7">Ward 7</SelectItem>
-                    <SelectItem value="Ward 8">Ward 8</SelectItem>
-                    <SelectItem value="Ward 9">Ward 9</SelectItem>
-                    <SelectItem value="Ward 10">Ward 10</SelectItem>
-                  </SelectContent>
-                </Select>
+                  options={wardOptions}
+                  placeholder="Select ward"
+                />
               </div>
               <div>
                 <Label htmlFor="edit-habitation">Habitation *</Label>
@@ -986,6 +1074,16 @@ const Elderly = () => {
                   required
                 />
               </div>
+                <Label htmlFor="edit-natureOfIssue">Nature of Issue</Label>
+                <Textarea
+                  id="edit-natureOfIssue"
+                  name="natureOfIssue"
+                  value={formData.natureOfIssue || ""}
+                  onChange={handleInputChange}
+                  placeholder="Enter one or more issues separated by commas"
+                />
+              </div>
+              <div>
               <div>
                 <Label htmlFor="edit-projectResponsible">
                   Project Responsible *
@@ -1260,6 +1358,20 @@ const Elderly = () => {
                   </p>
                 </div>
               )}
+              {selectedElderly.natureOfIssue &&
+                ((Array.isArray(selectedElderly.natureOfIssue) &&
+                  selectedElderly.natureOfIssue.length > 0) ||
+                  (!Array.isArray(selectedElderly.natureOfIssue) &&
+                    selectedElderly.natureOfIssue.trim() !== "")) && (
+                  <div>
+                    <Label className="font-semibold">Nature of Issue</Label>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {Array.isArray(selectedElderly.natureOfIssue)
+                        ? selectedElderly.natureOfIssue.join(", ")
+                        : selectedElderly.natureOfIssue}
+                    </p>
+                  </div>
+                )}
               {selectedElderly.individualCarePlan && (
                 <div>
                   <Label className="font-semibold">Individual Care Plan</Label>

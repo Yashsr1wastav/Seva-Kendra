@@ -309,6 +309,45 @@ class TrackingController {
     }
   }
 
+  async getUrgentCases(req, res) {
+    try {
+      const cases = await trackingService.getUrgentCases({
+        status: req.query.status,
+        assignedTo: req.query.assignedTo,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: cases,
+      });
+    } catch (error) {
+      console.error("Error fetching urgent cases:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to fetch urgent cases",
+      });
+    }
+  }
+
+  async getUrgentCaseAlerts(req, res) {
+    try {
+      const staleAfterDays = Number(req.query.staleAfterDays || 2);
+      const alerts = await trackingService.getUrgentCaseStaleAlerts(staleAfterDays);
+
+      res.status(200).json({
+        success: true,
+        data: alerts,
+        staleAfterDays,
+      });
+    } catch (error) {
+      console.error("Error fetching urgent case alerts:", error);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to fetch urgent case alerts",
+      });
+    }
+  }
+
   // Get monthly update history for a record
   async getMonthlyUpdateHistory(req, res) {
     try {

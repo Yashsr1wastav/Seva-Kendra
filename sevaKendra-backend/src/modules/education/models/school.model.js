@@ -106,14 +106,8 @@ const schoolSchema = new mongoose.Schema(
     },
     statusOfActionPlanImplementation: {
       type: String,
-      enum: [
-        "Not Started",
-        "In Progress",
-        "Partially Completed",
-        "Completed",
-        "On Hold",
-      ],
-      default: "Not Started",
+      enum: ["Planned", "Ongoing", "Completed"],
+      default: "Planned",
     },
     progressReporting: {
       type: progressReportingSchema,

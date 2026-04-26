@@ -11,6 +11,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -49,6 +64,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   Accessibility,
+  Check,
+  ChevronsUpDown,
   Plus,
   Search,
   Filter,
@@ -62,8 +79,90 @@ import {
 import { pwdAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import { getWardOptions } from "../lib/formOptions";
+
+const DISABILITY_OPTIONS = [
+  "Visual Impairment",
+  "Hearing Impairment",
+  "Locomotor Disability",
+  "Intellectual Disability",
+  "Mental Illness",
+  "Multiple Disabilities",
+  "Speech and Language Disability",
+  "Autism Spectrum Disorder",
+  "Cerebral Palsy",
+  "Muscular Dystrophy",
+  "Chronic Neurological Conditions",
+  "Leprosy Cured",
+  "Dwarfism",
+  "Acid Attack Victim",
+  "Other",
+];
+
+const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const selectedWard = options.find((ward) => ward.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-list`}
+          className="h-9 w-full justify-between bg-input px-3 text-left text-sm font-normal text-foreground"
+        >
+          {selectedWard ? selectedWard.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Type ward number..."
+            autoFocus
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <CommandList
+            id={`${id}-list`}
+            className="max-h-56"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>No ward found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((ward) => (
+                <CommandItem
+                  key={ward.value}
+                  value={`${ward.label} ${ward.numberValue}`}
+                  onSelect={() => {
+                    onChange(ward.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === ward.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {ward.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const PWD = () => {
+  const wardOptions = getWardOptions();
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pwd, setPwd] = useState([]);
@@ -99,7 +198,7 @@ const PWD = () => {
     projectResponsible: "",
     district: "",
     state: "",
-    typeOfDisability: "",
+    typeOfDisability: [],
     percentageOfDisability: "",
     disabilityCertificate: "",
     dateOfReporting: "",
@@ -112,6 +211,8 @@ const PWD = () => {
     educationalSupport: "",
     vocationalTraining: "",
     beneficiaryOfGovernmentSchemes: "",
+    udidCardStatus: "",
+    institutionalCare: "",
     progressReporting: {},
   });
 
@@ -145,12 +246,28 @@ const PWD = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (!Array.isArray(formData.typeOfDisability) || formData.typeOfDisability.length === 0) {
+        toast.error("Please select at least one disability type");
+        return;
+      }
+
+      const payload = {
+        ...formData,
+        typeOfDisability: Array.isArray(formData.typeOfDisability)
+          ? formData.typeOfDisability
+          : formData.typeOfDisability
+          ? [formData.typeOfDisability]
+          : [],
+        rehabilitationServices:
+          formData.institutionalCare || formData.rehabilitationServices || "",
+      };
+
       if (selectedRecord) {
-        await pwdAPI.update(selectedRecord._id, formData);
+        await pwdAPI.update(selectedRecord._id, payload);
         toast.success("PWD record updated successfully");
         setIsEditModalOpen(false);
       } else {
-        await pwdAPI.create(formData);
+        await pwdAPI.create(payload);
         toast.success("PWD record created successfully");
         setIsCreateModalOpen(false);
       }
@@ -191,7 +308,7 @@ const PWD = () => {
       projectResponsible: "",
       district: "",
       state: "",
-      typeOfDisability: "",
+      typeOfDisability: [],
       percentageOfDisability: "",
       disabilityCertificate: "",
       dateOfReporting: "",
@@ -204,6 +321,8 @@ const PWD = () => {
       educationalSupport: "",
       vocationalTraining: "",
       beneficiaryOfGovernmentSchemes: "",
+      udidCardStatus: "",
+      institutionalCare: "",
       progressReporting: {},
     });
     setSelectedRecord(null);
@@ -227,7 +346,11 @@ const PWD = () => {
       projectResponsible: record.projectResponsible || "",
       district: record.district || "",
       state: record.state || "",
-      typeOfDisability: record.typeOfDisability || "",
+      typeOfDisability: Array.isArray(record.typeOfDisability)
+        ? record.typeOfDisability
+        : record.typeOfDisability
+        ? [record.typeOfDisability]
+        : [],
       percentageOfDisability: record.percentageOfDisability || "",
       disabilityCertificate: record.disabilityCertificate || "",
       dateOfReporting: record.dateOfReporting
@@ -245,6 +368,9 @@ const PWD = () => {
       vocationalTraining: record.vocationalTraining || "",
       beneficiaryOfGovernmentSchemes:
         record.beneficiaryOfGovernmentSchemes || "",
+      udidCardStatus: record.udidCardStatus || "",
+      institutionalCare:
+        record.institutionalCare || record.rehabilitationServices || "",
       progressReporting: record.progressReporting || {},
     };
     // Only include optional enum fields if they have values
@@ -271,6 +397,21 @@ const PWD = () => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const toggleDisabilityType = (disability) => {
+    setFormData((prev) => {
+      const selected = Array.isArray(prev.typeOfDisability)
+        ? prev.typeOfDisability
+        : [];
+
+      return {
+        ...prev,
+        typeOfDisability: selected.includes(disability)
+          ? selected.filter((item) => item !== disability)
+          : [...selected, disability],
+      };
+    });
   };
 
   // Handle filter change
@@ -349,7 +490,7 @@ const PWD = () => {
                   />
                 </div>
                 <div>
-                  {/* <Label htmlFor="gender">Gender</Label>
+                  <Label htmlFor="gender">Gender</Label>
                   <Select value={filters.gender} onValueChange={(value) => handleFilterChange("gender", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="All Genders" />
@@ -360,10 +501,10 @@ const PWD = () => {
                       <SelectItem value="Female">Female</SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
-                  </Select> */}
+                  </Select>
                 </div>
                 <div>
-                  {/* <Label htmlFor="disabilityType">Disability Type</Label>
+                  <Label htmlFor="disabilityType">Disability Type</Label>
                   <Select value={filters.disabilityType} onValueChange={(value) => handleFilterChange("disabilityType", value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="All Types" />
@@ -378,7 +519,7 @@ const PWD = () => {
                       <SelectItem value="Mental">Mental</SelectItem>
                       <SelectItem value="Multiple">Multiple</SelectItem>
                     </SelectContent>
-                  </Select> */}
+                  </Select>
                 </div>
                 <div>
                   {/* <Label htmlFor="disabilitySeverity">Severity</Label>
@@ -396,18 +537,19 @@ const PWD = () => {
                   </Select> */}
                 </div>
                 <div>
-                  {/* <Label htmlFor="wardNo">Ward No</Label>
-                  <Input
+                  <Label htmlFor="wardNo">Ward No</Label>
+                  <WardCombobox
                     id="wardNo"
-                    placeholder="Filter by ward"
                     value={filters.wardNo}
-                    onChange={(e) => handleFilterChange("wardNo", e.target.value)}
-                  /> */}
+                    onChange={(value) => handleFilterChange("wardNo", value)}
+                    options={wardOptions}
+                    placeholder="Filter by ward"
+                  />
                 </div>
                 <div className="flex items-end">
-                  {/* <Button variant="outline" onClick={clearFilters} className="w-full">
+                  <Button variant="outline" onClick={clearFilters} className="w-full">
                     Clear Filters
-                  </Button> */}
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -470,7 +612,9 @@ const PWD = () => {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline">
-                              {record.typeOfDisability}
+                              {Array.isArray(record.typeOfDisability)
+                                ? record.typeOfDisability.join(", ")
+                                : record.typeOfDisability}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -693,28 +837,15 @@ const PWD = () => {
               </div>
               <div>
                 <Label htmlFor="wardNo">Ward No *</Label>
-                <Select
+                <WardCombobox
+                  id="wardNo"
                   value={formData.wardNo}
-                  onValueChange={(value) =>
+                  onChange={(value) =>
                     setFormData((prev) => ({ ...prev, wardNo: value }))
                   }
-                >
-                  <SelectTrigger id="wardNo">
-                    <SelectValue placeholder="Select ward" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Ward 1">Ward 1</SelectItem>
-                    <SelectItem value="Ward 2">Ward 2</SelectItem>
-                    <SelectItem value="Ward 3">Ward 3</SelectItem>
-                    <SelectItem value="Ward 4">Ward 4</SelectItem>
-                    <SelectItem value="Ward 5">Ward 5</SelectItem>
-                    <SelectItem value="Ward 6">Ward 6</SelectItem>
-                    <SelectItem value="Ward 7">Ward 7</SelectItem>
-                    <SelectItem value="Ward 8">Ward 8</SelectItem>
-                    <SelectItem value="Ward 9">Ward 9</SelectItem>
-                    <SelectItem value="Ward 10">Ward 10</SelectItem>
-                  </SelectContent>
-                </Select>
+                  options={wardOptions}
+                  placeholder="Select ward"
+                />
               </div>
               <div>
                 <Label htmlFor="habitation">Habitation *</Label>
@@ -760,55 +891,25 @@ const PWD = () => {
                   required
                 />
               </div>
-              <div>
+              <div className="md:col-span-3">
                 <Label htmlFor="typeOfDisability">Disability Type *</Label>
-                <Select
-                  value={formData.typeOfDisability}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      typeOfDisability: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Visual Impairment">
-                      Visual Impairment
-                    </SelectItem>
-                    <SelectItem value="Hearing Impairment">
-                      Hearing Impairment
-                    </SelectItem>
-                    <SelectItem value="Speech and Language Disability">
-                      Speech and Language Disability
-                    </SelectItem>
-                    <SelectItem value="Locomotor Disability">
-                      Locomotor Disability
-                    </SelectItem>
-                    <SelectItem value="Mental Retardation">
-                      Mental Retardation
-                    </SelectItem>
-                    <SelectItem value="Mental Illness">
-                      Mental Illness
-                    </SelectItem>
-                    <SelectItem value="Multiple Disabilities">
-                      Multiple Disabilities
-                    </SelectItem>
-                    <SelectItem value="Autism">Autism</SelectItem>
-                    <SelectItem value="Cerebral Palsy">
-                      Cerebral Palsy
-                    </SelectItem>
-                    <SelectItem value="Muscular Dystrophy">
-                      Muscular Dystrophy
-                    </SelectItem>
-                    <SelectItem value="Chronic Neurological Conditions">
-                      Chronic Neurological Conditions
-                    </SelectItem>
-                    <SelectItem value="Others">Others</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 rounded-md border p-3">
+                  {DISABILITY_OPTIONS.map((option) => {
+                    const checked = (formData.typeOfDisability || []).includes(option);
+                    return (
+                      <label
+                        key={option}
+                        className="flex items-center gap-2 text-sm text-foreground"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggleDisabilityType(option)}
+                        />
+                        <span>{option}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div>
                 <Label htmlFor="percentageOfDisability">
@@ -914,15 +1015,13 @@ const PWD = () => {
                 />
               </div>
               <div className="md:col-span-3">
-                <Label htmlFor="rehabilitationServices">
-                  Rehabilitation Services
-                </Label>
+                <Label htmlFor="institutionalCare">Institutional Care</Label>
                 <Textarea
-                  id="rehabilitationServices"
-                  name="rehabilitationServices"
-                  value={formData.rehabilitationServices}
+                  id="institutionalCare"
+                  name="institutionalCare"
+                  value={formData.institutionalCare || ""}
                   onChange={handleInputChange}
-                  placeholder="Details about rehabilitation services"
+                  placeholder="Details about institutional care support"
                 />
               </div>
               <div className="md:col-span-3">
@@ -966,6 +1065,25 @@ const PWD = () => {
                     <SelectItem value="Student">Student</SelectItem>
                     <SelectItem value="Retired">Retired</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="udidCardStatus">UDID Card Status</Label>
+                <Select
+                  value={formData.udidCardStatus || ""}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, udidCardStatus: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select UDID status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                    <SelectItem value="Applied">Applied</SelectItem>
+                    <SelectItem value="Not Applicable">Not Applicable</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1109,28 +1227,15 @@ const PWD = () => {
               </div>
               <div>
                 <Label htmlFor="editWardNo">Ward No *</Label>
-                <Select
+                <WardCombobox
+                  id="editWardNo"
                   value={formData.wardNo}
-                  onValueChange={(value) =>
+                  onChange={(value) =>
                     setFormData((prev) => ({ ...prev, wardNo: value }))
                   }
-                >
-                  <SelectTrigger id="editWardNo">
-                    <SelectValue placeholder="Select ward" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Ward 1">Ward 1</SelectItem>
-                    <SelectItem value="Ward 2">Ward 2</SelectItem>
-                    <SelectItem value="Ward 3">Ward 3</SelectItem>
-                    <SelectItem value="Ward 4">Ward 4</SelectItem>
-                    <SelectItem value="Ward 5">Ward 5</SelectItem>
-                    <SelectItem value="Ward 6">Ward 6</SelectItem>
-                    <SelectItem value="Ward 7">Ward 7</SelectItem>
-                    <SelectItem value="Ward 8">Ward 8</SelectItem>
-                    <SelectItem value="Ward 9">Ward 9</SelectItem>
-                    <SelectItem value="Ward 10">Ward 10</SelectItem>
-                  </SelectContent>
-                </Select>
+                  options={wardOptions}
+                  placeholder="Select ward"
+                />
               </div>
               <div>
                 <Label htmlFor="editHabitation">Habitation *</Label>
@@ -1141,6 +1246,25 @@ const PWD = () => {
                   onChange={handleInputChange}
                   required
                 />
+              </div>
+              <div>
+                <Label htmlFor="edit-udidCardStatus">UDID Card (Available/Status)</Label>
+                <Select
+                  value={formData.udidCardStatus || ""}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, udidCardStatus: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select UDID status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                    <SelectItem value="Applied">Applied</SelectItem>
+                    <SelectItem value="Not Applicable">Not Applicable</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="editProjectResponsible">
@@ -1176,55 +1300,25 @@ const PWD = () => {
                   required
                 />
               </div>
-              <div>
+              <div className="md:col-span-3">
                 <Label htmlFor="editTypeOfDisability">Disability Type *</Label>
-                <Select
-                  value={formData.typeOfDisability}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      typeOfDisability: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Visual Impairment">
-                      Visual Impairment
-                    </SelectItem>
-                    <SelectItem value="Hearing Impairment">
-                      Hearing Impairment
-                    </SelectItem>
-                    <SelectItem value="Speech and Language Disability">
-                      Speech and Language Disability
-                    </SelectItem>
-                    <SelectItem value="Locomotor Disability">
-                      Locomotor Disability
-                    </SelectItem>
-                    <SelectItem value="Mental Retardation">
-                      Mental Retardation
-                    </SelectItem>
-                    <SelectItem value="Mental Illness">
-                      Mental Illness
-                    </SelectItem>
-                    <SelectItem value="Multiple Disabilities">
-                      Multiple Disabilities
-                    </SelectItem>
-                    <SelectItem value="Autism">Autism</SelectItem>
-                    <SelectItem value="Cerebral Palsy">
-                      Cerebral Palsy
-                    </SelectItem>
-                    <SelectItem value="Muscular Dystrophy">
-                      Muscular Dystrophy
-                    </SelectItem>
-                    <SelectItem value="Chronic Neurological Conditions">
-                      Chronic Neurological Conditions
-                    </SelectItem>
-                    <SelectItem value="Others">Others</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 rounded-md border p-3">
+                  {DISABILITY_OPTIONS.map((option) => {
+                    const checked = (formData.typeOfDisability || []).includes(option);
+                    return (
+                      <label
+                        key={option}
+                        className="flex items-center gap-2 text-sm text-foreground"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggleDisabilityType(option)}
+                        />
+                        <span>{option}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div>
                 <Label htmlFor="editPercentageOfDisability">
@@ -1332,15 +1426,13 @@ const PWD = () => {
                 />
               </div>
               <div className="md:col-span-3">
-                <Label htmlFor="editRehabilitationServices">
-                  Rehabilitation Services
-                </Label>
+                <Label htmlFor="editInstitutionalCare">Institutional Care</Label>
                 <Textarea
-                  id="editRehabilitationServices"
-                  name="rehabilitationServices"
-                  value={formData.rehabilitationServices}
+                  id="editInstitutionalCare"
+                  name="institutionalCare"
+                  value={formData.institutionalCare || ""}
                   onChange={handleInputChange}
-                  placeholder="Details about rehabilitation services"
+                  placeholder="Details about institutional care support"
                 />
               </div>
               <div className="md:col-span-3">
@@ -1388,6 +1480,25 @@ const PWD = () => {
                     <SelectItem value="Student">Student</SelectItem>
                     <SelectItem value="Retired">Retired</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="editUdidCardStatus">UDID Card Status</Label>
+                <Select
+                  value={formData.udidCardStatus || ""}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, udidCardStatus: value }))
+                  }
+                >
+                  <SelectTrigger id="editUdidCardStatus">
+                    <SelectValue placeholder="Select UDID status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                    <SelectItem value="Applied">Applied</SelectItem>
+                    <SelectItem value="Not Applicable">Not Applicable</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1505,7 +1616,11 @@ const PWD = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="font-semibold">Type of Disability</Label>
-                    <Badge>{selectedRecord.typeOfDisability}</Badge>
+                    <Badge>
+                      {Array.isArray(selectedRecord.typeOfDisability)
+                        ? selectedRecord.typeOfDisability.join(", ")
+                        : selectedRecord.typeOfDisability}
+                    </Badge>
                   </div>
                   <div>
                     <Label className="font-semibold">
@@ -1526,6 +1641,10 @@ const PWD = () => {
                     >
                       {selectedRecord.disabilityCertificate}
                     </Badge>
+                  </div>
+                  <div>
+                    <Label className="font-semibold">UDID Card Status</Label>
+                    <p>{selectedRecord.udidCardStatus || "N/A"}</p>
                   </div>
                 </div>
               </div>
@@ -1581,9 +1700,13 @@ const PWD = () => {
                   </div>
                   <div>
                     <Label className="font-semibold">
-                      Rehabilitation Services
+                      Institutional Care
                     </Label>
-                    <p>{selectedRecord.rehabilitationServices || "N/A"}</p>
+                    <p>
+                      {selectedRecord.institutionalCare ||
+                        selectedRecord.rehabilitationServices ||
+                        "N/A"}
+                    </p>
                   </div>
                   <div>
                     <Label className="font-semibold">Educational Support</Label>

@@ -47,19 +47,19 @@ class LegalAidServiceService {
       if (filters.wardNo) query.wardNo = filters.wardNo;
       if (filters.habitation)
         query.habitation = new RegExp(filters.habitation, "i");
-      if (filters.caseType) query.caseType = filters.caseType;
-      if (filters.caseStatus) query.caseStatus = filters.caseStatus;
-      if (filters.priorityLevel) query.priorityLevel = filters.priorityLevel;
+      if (filters.caseType) query.natureOfIssue = filters.caseType;
+      if (filters.caseStatus) query.status = filters.caseStatus;
+      if (filters.priorityLevel) query.priority = filters.priorityLevel;
       if (filters.projectResponsible)
         query.projectResponsible = new RegExp(filters.projectResponsible, "i");
 
       // Date range filters
       if (filters.dateFrom || filters.dateTo) {
-        query.dateOfComplaint = {};
+        query.dateOfReporting = {};
         if (filters.dateFrom)
-          query.dateOfComplaint.$gte = new Date(filters.dateFrom);
+          query.dateOfReporting.$gte = new Date(filters.dateFrom);
         if (filters.dateTo)
-          query.dateOfComplaint.$lte = new Date(filters.dateTo);
+          query.dateOfReporting.$lte = new Date(filters.dateTo);
       }
 
       // Apply search
@@ -67,12 +67,12 @@ class LegalAidServiceService {
         const searchRegex = new RegExp(search, "i");
         const searchQuery = {
           $or: [
-            { complainantName: searchRegex },
-            { fatherName: searchRegex },
+            { name: searchRegex },
+            { headOfHousehold: searchRegex },
             { habitation: searchRegex },
             { contactNo: searchRegex },
-            { caseType: searchRegex },
-            { caseDescription: searchRegex },
+            { natureOfIssue: searchRegex },
+            { actionPlan: searchRegex },
             { projectResponsible: searchRegex },
             { remarks: searchRegex },
           ],
@@ -210,7 +210,7 @@ class LegalAidServiceService {
     try {
       return await LegalAidService.find({ wardNo })
         .populate("createdBy", "name")
-        .sort({ dateOfComplaint: -1 });
+        .sort({ dateOfReporting: -1 });
     } catch (error) {
       throw new APIError(
         500,
@@ -230,7 +230,7 @@ class LegalAidServiceService {
         habitation: new RegExp(habitation, "i"),
       })
         .populate("createdBy", "name")
-        .sort({ dateOfComplaint: -1 });
+        .sort({ dateOfReporting: -1 });
     } catch (error) {
       throw new APIError(
         500,
@@ -246,9 +246,9 @@ class LegalAidServiceService {
    */
   async getLegalAidServicesByCaseType(caseType) {
     try {
-      return await LegalAidService.find({ caseType })
+      return await LegalAidService.find({ natureOfIssue: caseType })
         .populate("createdBy", "name")
-        .sort({ dateOfComplaint: -1 });
+        .sort({ dateOfReporting: -1 });
     } catch (error) {
       throw new APIError(
         500,
@@ -264,9 +264,9 @@ class LegalAidServiceService {
    */
   async getLegalAidServicesByCaseStatus(caseStatus) {
     try {
-      return await LegalAidService.find({ caseStatus })
+      return await LegalAidService.find({ status: caseStatus })
         .populate("createdBy", "name")
-        .sort({ dateOfComplaint: -1 });
+        .sort({ dateOfReporting: -1 });
     } catch (error) {
       throw new APIError(
         500,
@@ -282,9 +282,9 @@ class LegalAidServiceService {
    */
   async getLegalAidServicesByPriority(priorityLevel) {
     try {
-      return await LegalAidService.find({ priorityLevel })
+      return await LegalAidService.find({ priority: priorityLevel })
         .populate("createdBy", "name")
-        .sort({ dateOfComplaint: -1 });
+        .sort({ dateOfReporting: -1 });
     } catch (error) {
       throw new APIError(
         500,
@@ -367,7 +367,7 @@ class LegalAidServiceService {
       const legalAidService = await LegalAidService.findByIdAndUpdate(
         id,
         {
-          caseStatus,
+          status: caseStatus,
           updatedBy: userId,
         },
         { new: true, runValidators: true }
@@ -393,14 +393,13 @@ class LegalAidServiceService {
       const today = new Date();
       return await LegalAidService.find({
         $or: [
-          { nextHearingDate: { $lte: today } },
           { followUpDate: { $lte: today } },
-          { caseStatus: "Under Investigation" },
-          { priorityLevel: "High" },
+          { status: "In Progress" },
+          { priority: "High" },
         ],
       })
         .populate("createdBy", "name")
-        .sort({ priorityLevel: 1, dateOfComplaint: -1 });
+        .sort({ followUpDate: 1, dateOfReporting: -1 });
     } catch (error) {
       throw new APIError(
         500,
@@ -426,24 +425,21 @@ class LegalAidServiceService {
 
       const timeline = [
         {
-          date: legalAidService.dateOfComplaint,
+          date: legalAidService.dateOfReporting,
           event: "Case Registered",
-          description: legalAidService.caseDescription,
+          description: legalAidService.actionPlan,
           type: "registration",
         },
       ];
 
-      // Add intervention steps to timeline
-      legalAidService.interventionSteps.forEach((step) => {
+      if (legalAidService.followUpRequired && legalAidService.followUpDate) {
         timeline.push({
-          date: step.date,
-          event: step.action,
-          description: step.description,
-          responsiblePerson: step.responsiblePerson,
-          outcome: step.outcome,
-          type: "intervention",
+          date: legalAidService.followUpDate,
+          event: "Follow-up Scheduled",
+          description: legalAidService.remarks || "Follow-up required",
+          type: "follow-up",
         });
-      });
+      }
 
       // Sort timeline by date
       timeline.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -469,19 +465,19 @@ class LegalAidServiceService {
 
       // Apply filters
       if (filters.wardNo) query.wardNo = filters.wardNo;
-      if (filters.caseType) query.caseType = filters.caseType;
-      if (filters.caseStatus) query.caseStatus = filters.caseStatus;
+      if (filters.caseType) query.natureOfIssue = filters.caseType;
+      if (filters.caseStatus) query.status = filters.caseStatus;
       if (filters.dateFrom || filters.dateTo) {
-        query.dateOfComplaint = {};
+        query.dateOfReporting = {};
         if (filters.dateFrom)
-          query.dateOfComplaint.$gte = new Date(filters.dateFrom);
+          query.dateOfReporting.$gte = new Date(filters.dateFrom);
         if (filters.dateTo)
-          query.dateOfComplaint.$lte = new Date(filters.dateTo);
+          query.dateOfReporting.$lte = new Date(filters.dateTo);
       }
 
       const cases = await LegalAidService.find(query)
         .populate("createdBy", "name")
-        .sort({ dateOfComplaint: -1 });
+        .sort({ dateOfReporting: -1 });
 
       const summary = {
         totalCases: cases.length,
@@ -497,29 +493,28 @@ class LegalAidServiceService {
 
       cases.forEach((caseItem) => {
         // Status breakdown
-        const status = caseItem.caseStatus;
+        const status = caseItem.status || "Pending";
         summary.statusBreakdown[status] =
           (summary.statusBreakdown[status] || 0) + 1;
 
         // Type breakdown
-        const type = caseItem.caseType;
+        const type = caseItem.natureOfIssue || "Other";
         summary.typeBreakdown[type] = (summary.typeBreakdown[type] || 0) + 1;
 
         // Priority breakdown
-        const priority = caseItem.priorityLevel;
+        const priority = caseItem.priority || "Medium";
         summary.priorityBreakdown[priority] =
           (summary.priorityBreakdown[priority] || 0) + 1;
 
         // Monthly trend
-        const month = caseItem.dateOfComplaint.toISOString().substring(0, 7);
+        const month = new Date(caseItem.dateOfReporting).toISOString().substring(0, 7);
         summary.monthlyTrend[month] = (summary.monthlyTrend[month] || 0) + 1;
 
-        // Resolution time calculation
-        if (caseItem.caseStatus === "Resolved" && caseItem.resolutionDate) {
+        if (caseItem.status === "Resolved" && caseItem.updatedAt && caseItem.dateOfReporting) {
           const resolutionTime =
-            (caseItem.resolutionDate - caseItem.dateOfComplaint) /
+            (new Date(caseItem.updatedAt) - new Date(caseItem.dateOfReporting)) /
             (1000 * 60 * 60 * 24);
-          totalResolutionTime += resolutionTime;
+          totalResolutionTime += Math.max(resolutionTime, 0);
           resolvedCases++;
         }
       });

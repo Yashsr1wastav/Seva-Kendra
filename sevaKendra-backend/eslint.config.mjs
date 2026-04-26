@@ -1,36 +1,30 @@
 import js from "@eslint/js";
 import globals from "globals";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: js.configs.recommended,
-  allConfig: js.configs.all,
-});
 
 export default [
   {
-    ignores: ["**/node_modules/", "**/dist/"],
+    ignores: ["**/node_modules/**", "**/dist/**", "coverage/**", "PERMISSION_APPLICATION_GUIDE.js"],
   },
-  ...compat.extends("eslint:recommended"),
+  js.configs.recommended,
   {
-    plugins: {},
+    files: ["**/*.js", "**/*.mjs"],
 
     languageOptions: {
       globals: {
-        ...globals.browser,
         ...globals.node,
+        ...globals.es2022,
       },
-
-      parser: "espree",
       ecmaVersion: "latest",
       sourceType: "module",
     },
 
-    rules: {},
+    rules: {
+      "no-console": "off",
+      "no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "no-case-declarations": "off",
+      "no-useless-catch": "off",
+      "no-prototype-builtins": "off",
+      "no-useless-escape": "off",
+    },
   },
 ];

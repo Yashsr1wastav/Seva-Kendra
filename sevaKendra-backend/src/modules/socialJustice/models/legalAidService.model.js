@@ -89,6 +89,18 @@ const legalAidServiceSchema = new mongoose.Schema(
         "Other",
       ],
     },
+    status: {
+      type: String,
+      enum: ["Pending", "In Progress", "Resolved", "Closed", "Referred"],
+      default: "Pending",
+      index: true,
+    },
+    priority: {
+      type: String,
+      enum: ["Low", "Medium", "High", "Urgent"],
+      default: "Medium",
+      index: true,
+    },
 
     // Intervention Plan
     actionPlan: {

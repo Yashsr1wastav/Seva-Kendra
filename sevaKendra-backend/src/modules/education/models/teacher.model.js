@@ -4,8 +4,8 @@ const teacherSchema = new mongoose.Schema(
   {
     teacherId: {
       type: String,
-      required: [true, "Teacher ID is required"],
       unique: true,
+      sparse: true,
       trim: true,
     },
     firstName: {
@@ -32,7 +32,7 @@ const teacherSchema = new mongoose.Schema(
       trim: true,
     },
     specialization: {
-      type: String,
+      type: [String],
       enum: [
         "Mathematics",
         "Science",
@@ -45,7 +45,7 @@ const teacherSchema = new mongoose.Schema(
         "General",
         "Other",
       ],
-      default: "General",
+      default: ["General"],
     },
     experience: {
       type: Number,

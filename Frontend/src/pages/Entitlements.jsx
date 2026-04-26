@@ -62,12 +62,92 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { entitlementsAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import { getWardOptions } from "../lib/formOptions";
+
+const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
+  const [open, setOpen] = useState(false);
+  const selectedWard = options.find((ward) => ward.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          id={id}
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={`${id}-list`}
+          className="h-9 w-full justify-between bg-input px-3 text-left text-sm font-normal text-foreground"
+        >
+          {selectedWard ? selectedWard.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50 shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[--radix-popover-trigger-width] p-0"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Type ward number..."
+            autoFocus
+            onKeyDown={(event) => event.stopPropagation()}
+          />
+          <CommandList
+            id={`${id}-list`}
+            className="max-h-56"
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <CommandEmpty>No ward found.</CommandEmpty>
+            <CommandGroup>
+              {options.map((ward) => (
+                <CommandItem
+                  key={ward.value}
+                  value={`${ward.label} ${ward.numberValue}`}
+                  onSelect={() => {
+                    onChange(ward.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4 shrink-0",
+                      value === ward.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {ward.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 const Entitlements = () => {
+  const wardOptions = getWardOptions();
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
   const entitlementTypes = [
     "Pension",
@@ -125,6 +205,17 @@ const Entitlements = () => {
     reportedBy: "",
     entitlementType: "",
     applicationDate: "",
+    documentation: {
+      typeOfDocument: "",
+      natureOfIssue: "",
+      status: "Pending",
+      dateOfReporting: "",
+    },
+    governmentSchemes: {
+      eligibleSchemes: "",
+      natureOfIssue: "",
+      status: "Pending",
+    },
     idProofAndDomicile: {
       typeOfDocument: "",
       natureOfIssue: "",
@@ -166,7 +257,9 @@ const Entitlements = () => {
         page: pagination.page,
         limit: pagination.limit,
         search: searchTerm,
-        ...filters,
+        ...Object.fromEntries(
+          Object.entries(filters).filter(([, value]) => value !== "all")
+        ),
       };
 
       const response = await entitlementsAPI.getAll(params);
@@ -209,14 +302,40 @@ const Entitlements = () => {
   }, [searchTerm, filters]);
 
   const buildEntitlementPayload = () => {
-    const { entitlementType, ...rest } = formData;
+    const {
+      entitlementType,
+      documentation,
+      governmentSchemes,
+      idProofAndDomicile,
+      schemes,
+      ...rest
+    } = formData;
+
+    const normalizedDocumentation = {
+      ...(documentation || idProofAndDomicile || {}),
+    };
+    const normalizedGovernmentSchemes = {
+      ...(governmentSchemes || schemes || {}),
+      eligibleSchemes:
+        entitlementType ||
+        governmentSchemes?.eligibleSchemes ||
+        schemes?.eligibleSchemes ||
+        "",
+    };
+
     const normalizedSchemes = {
-      ...(rest.schemes || {}),
-      eligibleSchemes: entitlementType || rest.schemes?.eligibleSchemes || "",
+      ...(schemes || {}),
+      eligibleSchemes: normalizedGovernmentSchemes.eligibleSchemes || "",
+      natureOfIssue:
+        normalizedGovernmentSchemes.natureOfIssue || schemes?.natureOfIssue || "",
+      status: normalizedGovernmentSchemes.status || schemes?.status || "Pending",
     };
 
     return {
       ...rest,
+      documentation: normalizedDocumentation,
+      governmentSchemes: normalizedGovernmentSchemes,
+      idProofAndDomicile: normalizedDocumentation,
       schemes: normalizedSchemes,
     };
   };
@@ -267,6 +386,17 @@ const Entitlements = () => {
       reportedBy: "",
       entitlementType: "",
       applicationDate: "",
+      documentation: {
+        typeOfDocument: "",
+        natureOfIssue: "",
+        status: "Pending",
+        dateOfReporting: "",
+      },
+      governmentSchemes: {
+        eligibleSchemes: "",
+        natureOfIssue: "",
+        status: "Pending",
+      },
       idProofAndDomicile: {
         typeOfDocument: "",
         natureOfIssue: "",
@@ -408,7 +538,7 @@ const Entitlements = () => {
                       className="pl-10"
                     />
                   </div>
-                  {/* <Select
+                  <Select
                     value={filters.status}
                     onValueChange={(value) =>
                       setFilters({ ...filters, status: value })
@@ -443,7 +573,7 @@ const Entitlements = () => {
                         </SelectItem>
                       ))}
                     </SelectContent>
-                  </Select> */}
+                  </Select>
                 </div>
               </CardContent>
             </Card>
@@ -575,6 +705,56 @@ const Entitlements = () => {
                                             "T"
                                           )[0]
                                         : "",
+                                      documentation: {
+                                        typeOfDocument:
+                                          entitlement.documentation
+                                            ?.typeOfDocument ||
+                                          entitlement.idProofAndDomicile
+                                            ?.typeOfDocument ||
+                                          "",
+                                        natureOfIssue:
+                                          entitlement.documentation
+                                            ?.natureOfIssue ||
+                                          entitlement.idProofAndDomicile
+                                            ?.natureOfIssue ||
+                                          "",
+                                        status:
+                                          entitlement.documentation?.status ||
+                                          entitlement.idProofAndDomicile
+                                            ?.status ||
+                                          "Pending",
+                                        dateOfReporting:
+                                          entitlement.documentation
+                                            ?.dateOfReporting
+                                            ? entitlement.documentation.dateOfReporting.split(
+                                                "T"
+                                              )[0]
+                                            : entitlement.idProofAndDomicile
+                                                ?.dateOfReporting
+                                            ? entitlement.idProofAndDomicile.dateOfReporting.split(
+                                                "T"
+                                              )[0]
+                                            : "",
+                                      },
+                                      governmentSchemes: {
+                                        eligibleSchemes:
+                                          entitlement.governmentSchemes
+                                            ?.eligibleSchemes ||
+                                          entitlement.entitlementType ||
+                                          entitlement.schemes
+                                            ?.eligibleSchemes ||
+                                          "",
+                                        natureOfIssue:
+                                          entitlement.governmentSchemes
+                                            ?.natureOfIssue ||
+                                          entitlement.schemes?.natureOfIssue ||
+                                          "",
+                                        status:
+                                          entitlement.governmentSchemes
+                                            ?.status ||
+                                          entitlement.schemes?.status ||
+                                          "Pending",
+                                      },
                                       documentsSubmitted:
                                         entitlement.documentsSubmitted || "",
                                       verificationStatus:
@@ -766,7 +946,7 @@ const Entitlements = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="gender">Gender *</Label>
+                      <Label htmlFor="gender">Gender</Label>
                       <Select
                         value={formData.gender}
                         onValueChange={(value) =>
@@ -786,7 +966,7 @@ const Entitlements = () => {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="age">Age *</Label>
+                      <Label htmlFor="age">Age</Label>
                       <Input
                         id="age"
                         type="number"
@@ -800,12 +980,11 @@ const Entitlements = () => {
                           })
                         }
                         placeholder="Enter age"
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="headOfHousehold">
-                        Head of Household *
+                        Head of Household
                       </Label>
                       <Input
                         id="headOfHousehold"
@@ -817,11 +996,10 @@ const Entitlements = () => {
                           })
                         }
                         placeholder="Enter head of household"
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="contactNo">Contact Number *</Label>
+                      <Label htmlFor="contactNo">Contact Number</Label>
                       <Input
                         id="contactNo"
                         value={formData.contactNo}
@@ -833,39 +1011,22 @@ const Entitlements = () => {
                         }
                         placeholder="Enter contact number"
                         pattern="[6-9][0-9]{9}"
-                        required
                       />
                     </div>
                     <div>
                       <Label htmlFor="wardNo">Ward Number *</Label>
-                      <Select
+                      <WardCombobox
+                        id="wardNo"
                         value={formData.wardNo}
-                        onValueChange={(value) =>
-                          setFormData({
-                            ...formData,
-                            wardNo: value,
-                          })
+                        onChange={(value) =>
+                          setFormData({ ...formData, wardNo: value })
                         }
-                      >
-                        <SelectTrigger id="wardNo">
-                          <SelectValue placeholder="Select ward" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Ward 1">Ward 1</SelectItem>
-                          <SelectItem value="Ward 2">Ward 2</SelectItem>
-                          <SelectItem value="Ward 3">Ward 3</SelectItem>
-                          <SelectItem value="Ward 4">Ward 4</SelectItem>
-                          <SelectItem value="Ward 5">Ward 5</SelectItem>
-                          <SelectItem value="Ward 6">Ward 6</SelectItem>
-                          <SelectItem value="Ward 7">Ward 7</SelectItem>
-                          <SelectItem value="Ward 8">Ward 8</SelectItem>
-                          <SelectItem value="Ward 9">Ward 9</SelectItem>
-                          <SelectItem value="Ward 10">Ward 10</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        options={wardOptions}
+                        placeholder="Select ward"
+                      />
                     </div>
                     <div>
-                      <Label htmlFor="habitation">Habitation *</Label>
+                      <Label htmlFor="habitation">Habitation</Label>
                       <Input
                         id="habitation"
                         value={formData.habitation}
@@ -876,7 +1037,6 @@ const Entitlements = () => {
                           })
                         }
                         placeholder="Enter habitation"
-                        required
                       />
                     </div>
                     <div>
@@ -898,7 +1058,7 @@ const Entitlements = () => {
                     </div>
                     <div>
                       <Label htmlFor="dateOfReporting">
-                        Date of Reporting *
+                        Date of Reporting
                       </Label>
                       <Input
                         id="dateOfReporting"
@@ -910,11 +1070,10 @@ const Entitlements = () => {
                             dateOfReporting: e.target.value,
                           })
                         }
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="reportedBy">Reported By *</Label>
+                      <Label htmlFor="reportedBy">Reported By</Label>
                       <Input
                         id="reportedBy"
                         value={formData.reportedBy}
@@ -925,7 +1084,6 @@ const Entitlements = () => {
                           })
                         }
                         placeholder="Enter reported by"
-                        required
                       />
                     </div>
                     <div>
@@ -990,6 +1148,96 @@ const Entitlements = () => {
                         }
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="documentationType">Document Type</Label>
+                      <Select
+                        value={formData.documentation?.typeOfDocument || ""}
+                        onValueChange={(value) =>
+                          setFormData({
+                            ...formData,
+                            documentation: {
+                              ...formData.documentation,
+                              typeOfDocument: value,
+                            },
+                          })
+                        }
+                      >
+                        <SelectTrigger id="documentationType">
+                          <SelectValue placeholder="Select document type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {documentTypes.map((docType) => (
+                            <SelectItem key={docType} value={docType}>
+                              {docType}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="documentationStatus">
+                        Documentation Status
+                      </Label>
+                      <Select
+                        value={formData.documentation?.status || "Pending"}
+                        onValueChange={(value) =>
+                          setFormData({
+                            ...formData,
+                            documentation: {
+                              ...formData.documentation,
+                              status: value,
+                            },
+                          })
+                        }
+                      >
+                        <SelectTrigger id="documentationStatus">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="documentationIssue">
+                        Documentation Nature of Issue
+                      </Label>
+                      <Textarea
+                        id="documentationIssue"
+                        value={formData.documentation?.natureOfIssue || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            documentation: {
+                              ...formData.documentation,
+                              natureOfIssue: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Describe documentation issue"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="schemeIssue">Government Scheme Issue</Label>
+                      <Textarea
+                        id="schemeIssue"
+                        value={formData.governmentSchemes?.natureOfIssue || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            governmentSchemes: {
+                              ...formData.governmentSchemes,
+                              natureOfIssue: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Describe scheme-related issue"
+                      />
+                    </div>
                   </div>
 
                   <DialogFooter>
@@ -1019,7 +1267,7 @@ const Entitlements = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="edit-beneficiaryId">
-                        Beneficiary ID *
+                        Beneficiary ID
                       </Label>
                       <Input
                         id="edit-beneficiaryId"
@@ -1031,7 +1279,6 @@ const Entitlements = () => {
                           })
                         }
                         placeholder="Enter beneficiary ID"
-                        required
                       />
                     </div>
                     <div>

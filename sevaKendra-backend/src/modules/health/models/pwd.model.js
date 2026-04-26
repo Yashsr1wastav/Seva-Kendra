@@ -91,22 +91,26 @@ const pwdSchema = new mongoose.Schema(
 
     // Disability Details
     typeOfDisability: {
-      type: String,
+      type: [String],
       required: [true, "Type of disability is required"],
       enum: [
         "Visual Impairment",
         "Hearing Impairment",
-        "Speech and Language Disability",
         "Locomotor Disability",
-        "Mental Retardation",
+        "Intellectual Disability",
         "Mental Illness",
         "Multiple Disabilities",
-        "Autism",
+        "Speech and Language Disability",
+        "Autism Spectrum Disorder",
         "Cerebral Palsy",
         "Muscular Dystrophy",
         "Chronic Neurological Conditions",
-        "Others",
+        "Leprosy Cured",
+        "Dwarfism",
+        "Acid Attack Victim",
+        "Other",
       ],
+      default: [],
     },
     percentageOfDisability: {
       type: Number,
@@ -118,6 +122,11 @@ const pwdSchema = new mongoose.Schema(
       type: String,
       enum: ["Available", "Not Available", "In Process", "Expired"],
       required: [true, "Disability certificate status is required"],
+    },
+    udidCardStatus: {
+      type: String,
+      enum: ["Yes", "No", "Applied", "Not Applicable"],
+      default: "No",
     },
 
     // Reporting Details
@@ -148,6 +157,10 @@ const pwdSchema = new mongoose.Schema(
       trim: true,
     },
     rehabilitationServices: {
+      type: String,
+      trim: true,
+    },
+    institutionalCare: {
       type: String,
       trim: true,
     },

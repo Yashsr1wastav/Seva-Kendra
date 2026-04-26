@@ -46,6 +46,7 @@ const AddFollowUpButton = ({
     habitation: "",
     projectResponsible: "",
     tags: "",
+    isUrgent: false,
   });
 
   const priorities = ["Low", "Medium", "High", "Urgent"];
@@ -68,6 +69,7 @@ const AddFollowUpButton = ({
         recordName,
         module,
         ...formData,
+        priority: formData.isUrgent ? "Urgent" : formData.priority,
         tags: formData.tags
           .split(",")
           .map((tag) => tag.trim())
@@ -87,6 +89,7 @@ const AddFollowUpButton = ({
         habitation: "",
         projectResponsible: "",
         tags: "",
+        isUrgent: false,
       });
 
       if (onSuccess) {
@@ -272,6 +275,18 @@ const AddFollowUpButton = ({
                   }
                   placeholder="tag1, tag2, tag3"
                 />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  id="isUrgent"
+                  type="checkbox"
+                  checked={formData.isUrgent}
+                  onChange={(e) =>
+                    setFormData({ ...formData, isUrgent: e.target.checked })
+                  }
+                />
+                <Label htmlFor="isUrgent">Flag this case as Urgent</Label>
               </div>
             </div>
 

@@ -29,6 +29,10 @@ const competitiveExamSchema = new mongoose.Schema(
       unique: true,
       trim: true,
     },
+    scStudentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SCStudent",
+    },
     name: {
       type: String,
       required: [true, "Name is required"],
@@ -87,7 +91,7 @@ const competitiveExamSchema = new mongoose.Schema(
       trim: true,
     },
     typeOfExam: {
-      type: String,
+      type: [String],
       required: [true, "Type of exam is required"],
       enum: [
         "JEE Main",
@@ -103,7 +107,7 @@ const competitiveExamSchema = new mongoose.Schema(
         "State PSC",
         "Other",
       ],
-      trim: true,
+      default: [],
     },
     status: {
       type: String,
