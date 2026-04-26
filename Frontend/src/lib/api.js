@@ -2,8 +2,9 @@ import axios from "axios";
 import { toast } from "sonner";
 
 // Determine default base URL based on environment
+// For production, we prefer VITE_API_URL env var set in Vercel
 const defaultBaseUrl = import.meta.env.PROD 
-  ? "https://seva-kendra-backend.vercel.app/api/v1" 
+  ? "https://seva-kendra-backend.vercel.app/api/v1" // Fallback - should ideally be set in Vercel
   : "http://localhost:5000/api/v1";
 
 // Create axios instance with default config

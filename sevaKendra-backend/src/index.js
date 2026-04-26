@@ -14,7 +14,6 @@ const app = express();
 const whitelist = [
   appConfig.whiteList,
   appConfig.frontendUrl,
-  process.env.VERCEL ? "https://seva-kendra-frontend.vercel.app" : "",
 ]
   .flatMap((value) => value.split(","))
   .map((origin) => origin.trim())
@@ -24,15 +23,35 @@ app.set("trust proxy", 1);
 
 const corsOptions = {
   origin(origin, callback) {
-    if (!origin || whitelist.length === 0 || whitelist.includes(origin)) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
       callback(null, true);
       return;
     }
 
+    // Check if origin is in whitelist
+    if (whitelist.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    // Always allow Vercel subdomains to prevent common deployment issues
+    if (origin.endsWith(".vercel.app")) {
+      callback(null, true);
+      return;
+    }
+
+    // Allow localhost in development
+    if (appConfig.nodeEnv !== "production" && (origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1"))) {
+      callback(null, true);
+      return;
+    }
+
+    console.error(`CORS blocked for origin: ${origin}`);
     callback(new Error("Not allowed by CORS"));
   },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   credentials: true,
   optionsSuccessStatus: 200,
 };
