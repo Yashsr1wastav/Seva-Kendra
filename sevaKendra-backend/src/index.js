@@ -11,8 +11,12 @@ import { appConfig } from "./config/appConfig.js";
 
 const app = express();
 
-const whitelist = appConfig.whiteList
-  .split(",")
+const whitelist = [
+  appConfig.whiteList,
+  appConfig.frontendUrl,
+  process.env.VERCEL ? "https://seva-kendra-frontend.vercel.app" : "",
+]
+  .flatMap((value) => value.split(","))
   .map((origin) => origin.trim())
   .filter(Boolean);
 

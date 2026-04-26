@@ -8,4 +8,5 @@ export const appConfig = {
   port: process.env.PORT ?? 5000,
   nodeEnv: process.env.NODE_ENV ?? "",
   whiteList: process.env.WHITELIST ?? "",
+  frontendUrl: process.env.FRONTEND_URL ?? "",
 };
