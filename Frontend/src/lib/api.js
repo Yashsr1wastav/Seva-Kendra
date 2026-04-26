@@ -16,6 +16,11 @@ const api = axios.create({
   },
 });
 
+// Debug log for production connectivity issues
+if (import.meta.env.PROD) {
+  console.log("API Base URL:", api.defaults.baseURL);
+}
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {

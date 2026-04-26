@@ -69,12 +69,23 @@ app.use(morgan("tiny"));
 // Handle preflight requests
 app.options("*", cors(corsOptions));
 
+// Health check at root
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    service: "ngo_backend_root",
+    vercel: !!process.env.VERCEL,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "ok",
     service: "ngo_backend",
     environment: appConfig.nodeEnv || "development",
     timestamp: new Date().toISOString(),
+    dbState: mongoose.connection.readyState
   });
 });
 
@@ -98,9 +109,21 @@ const startServer = async () => {
   }
 };
 
+// Vercel handles the listening, but we still need to connect to DB
 if (process.env.VERCEL) {
-  dbConnect().catch((error) => {
-    console.error("Database connection failed on Vercel runtime:", error.message);
+  // Use a promise to ensure we only try to connect once per instance
+  let cachedDb = null;
+  app.use(async (req, res, next) => {
+    try {
+      if (!cachedDb) {
+        cachedDb = dbConnect();
+      }
+      await cachedDb;
+      next();
+    } catch (err) {
+      console.error("Database connection middleware error:", err.message);
+      res.status(503).json({ error: "Database connection failed" });
+    }
   });
 } else {
   startServer();
