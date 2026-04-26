@@ -1,9 +1,14 @@
 import axios from "axios";
 import { toast } from "sonner";
 
+// Determine default base URL based on environment
+const defaultBaseUrl = import.meta.env.PROD 
+  ? "https://seva-kendra-backend.vercel.app/api/v1" 
+  : "http://localhost:5000/api/v1";
+
 // Create axios instance with default config
 const api = axios.create({  
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api/v1",
+  baseURL: import.meta.env.VITE_API_URL || defaultBaseUrl,
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
