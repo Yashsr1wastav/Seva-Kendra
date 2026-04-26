@@ -13,6 +13,7 @@ const app = express();
 
 const whitelist = [
   appConfig.whiteList,
+  appConfig.vercel,
   appConfig.frontendUrl,
   process.env.VERCEL ? "https://seva-kendra-frontend.vercel.app" : "",
 ]

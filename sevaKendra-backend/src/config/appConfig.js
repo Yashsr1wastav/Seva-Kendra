@@ -9,4 +9,5 @@ export const appConfig = {
   nodeEnv: process.env.NODE_ENV ?? "",
   whiteList: process.env.WHITELIST ?? "",
   frontendUrl: process.env.FRONTEND_URL ?? "",
+  vercel: process.env.VERCEL_URL ?? "",
 };
