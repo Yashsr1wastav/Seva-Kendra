@@ -62,7 +62,7 @@ app.use(
     type: ["application/json", "text/plain"],
   })
 );
-app.use(helmet());
+// app.use(helmet());
 // app.use(xss());
 app.use(morgan("tiny"));
 

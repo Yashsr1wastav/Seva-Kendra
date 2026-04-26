@@ -85,7 +85,10 @@ api.interceptors.response.use(
     } else if (error.request) {
       // Request made but no response received
       errorMessage = "Network error. Please check your connection.";
-      console.error("Network Error:", error.request);
+      console.error("Full Network Error Object:", error);
+      console.error("Error Code:", error.code);
+      console.error("Error Message:", error.message);
+      console.error("Request Config:", error.config);
     } else {
       // Error in request setup
       errorMessage = error.message || "Failed to make request";
