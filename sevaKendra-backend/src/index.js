@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import dbConnect from "./utils/dbConnection.js";
 import cors from "cors";
 import morgan from "morgan";
@@ -11,11 +12,13 @@ import { appConfig } from "./config/appConfig.js";
 
 const app = express();
 
+const isVercel = Boolean(process.env.VERCEL || process.env.VERCEL_URL);
+
 const whitelist = [
   appConfig.whiteList,
   appConfig.vercel,
   appConfig.frontendUrl,
-  process.env.VERCEL ? "https://seva-kendra-frontend.vercel.app" : "",
+  isVercel ? "https://seva-kendra-frontend.vercel.app" : "",
 ]
   .flatMap((value) => value.split(","))
   .map((origin) => origin.trim())
@@ -76,7 +79,7 @@ app.get("/", (req, res) => {
   res.status(200).json({
     status: "ok",
     service: "ngo_backend_root",
-    vercel: !!process.env.VERCEL,
+    vercel: isVercel,
     timestamp: new Date().toISOString(),
   });
 });
@@ -90,6 +93,23 @@ app.get("/health", (req, res) => {
     dbState: mongoose.connection.readyState
   });
 });
+
+// Vercel DB connection middleware — MUST be before routes
+if (isVercel) {
+  let cachedDb = null;
+  app.use(async (req, res, next) => {
+    try {
+      if (!cachedDb) {
+        cachedDb = dbConnect();
+      }
+      await cachedDb;
+      next();
+    } catch (err) {
+      console.error("Database connection middleware error:", err.message);
+      res.status(503).json({ error: "Database connection failed" });
+    }
+  });
+}
 
 app.use("/api/v1", indexRouter);
 
@@ -111,23 +131,8 @@ const startServer = async () => {
   }
 };
 
-// Vercel handles the listening, but we still need to connect to DB
-if (process.env.VERCEL) {
-  // Use a promise to ensure we only try to connect once per instance
-  let cachedDb = null;
-  app.use(async (req, res, next) => {
-    try {
-      if (!cachedDb) {
-        cachedDb = dbConnect();
-      }
-      await cachedDb;
-      next();
-    } catch (err) {
-      console.error("Database connection middleware error:", err.message);
-      res.status(503).json({ error: "Database connection failed" });
-    }
-  });
-} else {
+// Only start the server locally (Vercel handles listening itself)
+if (!isVercel) {
   startServer();
 }
 
