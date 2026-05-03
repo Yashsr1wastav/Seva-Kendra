@@ -52,6 +52,7 @@ import {
 import { otherDiseasesAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const OtherDiseases = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -259,6 +260,17 @@ const OtherDiseases = () => {
         </header>
 
         <main className="flex-1 overflow-auto p-6">
+          <GuidelinesCard
+            title="General Health Screening Guidelines"
+            description="Track and monitor beneficiaries with health conditions not covered by other specific modules."
+            items={[
+              "Provide a detailed description of the health issue in the 'Nature of Issue' field.",
+              "Document screening results and institutional admission details where applicable.",
+              "Maintain consistent follow-up records to track treatment progress.",
+              "Coordinate with local health institutions for specialized care linkages.",
+              "Ensure overall status is updated promptly (Active/Completed/Lost to Follow-up).",
+            ]}
+          />
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -578,14 +590,13 @@ const OtherDiseases = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="contactNo">Contact Number *</Label>
+                <Label htmlFor="contactNo">Contact Number</Label>
                 <Input
                   id="contactNo"
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleInputChange}
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -930,3 +941,7 @@ const OtherDiseases = () => {
 };
 
 export default OtherDiseases;
+
+
+
+

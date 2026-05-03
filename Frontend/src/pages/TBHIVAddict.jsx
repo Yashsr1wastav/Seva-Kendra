@@ -61,6 +61,7 @@ import {
 } from "lucide-react";
 import { tbhivAddictAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const TBHIVAddict = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -316,6 +317,17 @@ const TBHIVAddict = () => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto p-6">
+          <GuidelinesCard
+            title="TB/HIV/Addiction Care Guidelines"
+            description="Manage care and tracking for beneficiaries with specialized health needs."
+            items={[
+              "Ensure accurate condition type (TB, HIV, Addiction, or TB-HIV) is selected.",
+              "Track treatment start dates and associated medical centers for continuity of care.",
+              "Document adherence status and any reported side effects of medications.",
+              "Track social support provided and counseling sessions conducted.",
+              "Ensure referrals to specialized centers are documented with follow-up status.",
+            ]}
+          />
           {/* Filters */}
           <Card className="mb-6">
             <CardHeader>
@@ -662,14 +674,13 @@ const TBHIVAddict = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="contactNo">Contact Number *</Label>
+                <Label htmlFor="contactNo">Contact Number</Label>
                 <Input
                   id="contactNo"
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleInputChange}
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -867,3 +878,6 @@ const TBHIVAddict = () => {
 };
 
 export default TBHIVAddict;
+
+
+

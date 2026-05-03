@@ -11,6 +11,7 @@ class SCStudentService {
       search = "",
       wardNo = "",
       gender = "",
+      studentStatus = "",
       projectResponsible = "",
       sortBy = "createdAt",
       sortOrder = "desc",
@@ -36,6 +37,11 @@ class SCStudentService {
     // Filter by gender
     if (gender) {
       filter.gender = gender;
+    }
+
+    // Filter by student status
+    if (studentStatus) {
+      filter.studentStatus = { $regex: new RegExp(`^${studentStatus}$`, "i") };
     }
 
     // Filter by project responsible
@@ -145,7 +151,7 @@ class SCStudentService {
 
   // Get SC students statistics
   async getSCStudentsStats() {
-    const [total, byGender, byWard, byAge] = await Promise.all([
+    const [total, byGender, byWard, byAge, byStatus] = await Promise.all([
       SCStudent.countDocuments(),
       SCStudent.aggregate([{ $group: { _id: "$gender", count: { $sum: 1 } } }]),
       SCStudent.aggregate([
@@ -169,6 +175,7 @@ class SCStudentService {
           },
         },
       ]),
+      SCStudent.aggregate([{ $group: { _id: { $ifNull: ["$studentStatus", "Unknown"] }, count: { $sum: 1 } } }]),
     ]);
 
     return {
@@ -176,21 +183,25 @@ class SCStudentService {
       byGender,
       byWard,
       byAge,
+      byStatus,
     };
   }
 
   // Get unique values for filters
   async getFilterOptions() {
-    const [wardNumbers, projectResponsibles, genders] = await Promise.all([
-      SCStudent.distinct("wardNo"),
-      SCStudent.distinct("projectResponsible"),
-      SCStudent.distinct("gender"),
-    ]);
+    const [wardNumbers, projectResponsibles, genders, studentStatuses] =
+      await Promise.all([
+        SCStudent.distinct("wardNo"),
+        SCStudent.distinct("projectResponsible"),
+        SCStudent.distinct("gender"),
+        SCStudent.distinct("studentStatus"),
+      ]);
 
     return {
       wardNumbers: wardNumbers.sort(),
       projectResponsibles: projectResponsibles.sort(),
       genders: genders.sort(),
+      studentStatuses: studentStatuses.sort(),
     };
   }
 }

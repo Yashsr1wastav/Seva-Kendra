@@ -48,10 +48,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Edit, Trash2, Eye, Menu } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Eye, Menu, Users, UserCheck, GraduationCap, BookOpen } from "lucide-react";
 import { teacherAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const Teachers = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -81,6 +82,10 @@ const Teachers = () => {
     qualifications: "",
     status: "Active",
   });
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [specializationFilter, setSpecializationFilter] = useState("all");
+  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, onLeave: 0 });
+  const [filterOptions, setFilterOptions] = useState({ specializations: [], statuses: [] });
 
   const getSpecializationList = (specialization) => {
     if (Array.isArray(specialization)) {
@@ -100,6 +105,8 @@ const Teachers = () => {
         page: pagination.page,
         limit: pagination.limit,
         search: searchTerm,
+        status: statusFilter === "all" ? "" : statusFilter,
+        specialization: specializationFilter === "all" ? "" : specializationFilter,
       };
 
       const response = await teacherAPI.getAll(params);
@@ -113,9 +120,36 @@ const Teachers = () => {
     }
   };
 
+  const fetchStatsAndOptions = async () => {
+    try {
+      const [statsRes, optionsRes] = await Promise.all([
+        teacherAPI.getStats(),
+        teacherAPI.getFilterOptions()
+      ]);
+      
+      const statsData = statsRes.data.data;
+      const byStatus = statsData.byStatus || [];
+      
+      setStats({
+        total: statsData.total || 0,
+        active: byStatus.find(s => s._id === "Active")?.count || 0,
+        inactive: byStatus.find(s => s._id === "Inactive")?.count || 0,
+        onLeave: byStatus.find(s => s._id === "On Leave")?.count || 0,
+      });
+      
+      setFilterOptions(optionsRes.data.data);
+    } catch (error) {
+      console.error("Error fetching teacher stats/options:", error);
+    }
+  };
+
   useEffect(() => {
     fetchTeachers();
-  }, [pagination.page, pagination.limit, searchTerm]);
+  }, [pagination.page, pagination.limit, searchTerm, statusFilter, specializationFilter]);
+
+  useEffect(() => {
+    fetchStatsAndOptions();
+  }, []);
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -239,33 +273,91 @@ const Teachers = () => {
 
         {/* Content Area */}
         <div className="p-6 space-y-6">
+          <GuidelinesCard
+            title="Teaching Faculty Guidelines"
+            description="Manage profiles of educators across different project centers and specializations."
+            items={[
+              "Select all applicable subjects in the 'Specialization' list.",
+              "Document teaching experience in years and specify domain expertise.",
+              "Ensure contact information is valid for center-level coordination.",
+              "Update status promptly if a teacher is on leave or becomes inactive.",
+              "Verify qualification details against submitted documentation.",
+            ]}
+          />
+
+
+
           {/* Controls */}
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name, email, or phone..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setPagination((p) => ({ ...p, page: 1 }));
-                  }}
-                  className="pl-10"
-                />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex-1 max-w-md">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name, email, or phone..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setPagination((p) => ({ ...p, page: 1 }));
+                    }}
+                    className="pl-10"
+                  />
+                </div>
               </div>
-            </div>
-            {canCreate("education") && (
-              <Dialog
-                open={isCreateModalOpen}
-                onOpenChange={setIsCreateModalOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button onClick={() => resetForm()} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Teacher
-                  </Button>
-                </DialogTrigger>
+              <div className="flex flex-wrap gap-2">
+                <div className="w-[180px]">
+                  <Select
+                    value={statusFilter}
+                    onValueChange={(val) => {
+                      setStatusFilter(val);
+                      setPagination((p) => ({ ...p, page: 1 }));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      {statuses.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-[200px]">
+                  <Select
+                    value={specializationFilter}
+                    onValueChange={(val) => {
+                      setSpecializationFilter(val);
+                      setPagination((p) => ({ ...p, page: 1 }));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Specialization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Specializations</SelectItem>
+                      {specializations.map((spec) => (
+                        <SelectItem key={spec} value={spec}>
+                          {spec}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {canCreate("education") && (
+                  <Dialog
+                    open={isCreateModalOpen}
+                    onOpenChange={setIsCreateModalOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button onClick={() => resetForm()} className="gap-2">
+                        <Plus className="h-4 w-4" />
+                        Add Teacher
+                      </Button>
+                    </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-screen overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Teacher</DialogTitle>
@@ -476,6 +568,8 @@ const Teachers = () => {
               </DialogContent>
             </Dialog>
             )}
+          </div>
+            </div>
           </div>
 
           {/* Teachers Table */}
@@ -935,3 +1029,6 @@ const Teachers = () => {
 };
 
 export default Teachers;
+
+
+

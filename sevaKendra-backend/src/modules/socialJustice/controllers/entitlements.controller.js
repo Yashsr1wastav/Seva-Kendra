@@ -24,8 +24,8 @@ export const getAllEntitlements = errorWrapper(async (req, res) => {
   const filters = {
     wardNo: req.query.wardNo,
     habitation: req.query.habitation,
-    idProofType: req.query.idProofType,
-    applicationStatus: req.query.applicationStatus,
+    entitlementType: req.query.entitlementType,
+    status: req.query.status,
     projectResponsible: req.query.projectResponsible,
     dateFrom: req.query.dateFrom,
     dateTo: req.query.dateTo,

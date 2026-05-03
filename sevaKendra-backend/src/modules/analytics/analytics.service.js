@@ -62,9 +62,10 @@ class AnalyticsService {
       }
 
       const dateFilter = this._getDateFilter(dateRange);
+      const prevDateFilter = this._getPreviousDateFilter(dateRange);
       
       // Optimize: Get all module counts in parallel using aggregation
-      const [dashboardStats, trackingStats] = await Promise.all([
+      const [dashboardStats, trackingStats, prevDashboardStats, prevTrackingStats, urgentCases, prevUrgentCases] = await Promise.all([
         this._getAllModuleCountsAggregated(dateFilter),
         Tracking.aggregate([
           { $match: dateFilter },
@@ -74,28 +75,39 @@ class AnalyticsService {
               count: { $sum: 1 }
             }
           }
-        ])
+        ]),
+        prevDateFilter ? this._getAllModuleCountsAggregated(prevDateFilter) : Promise.resolve(null),
+        prevDateFilter ? Tracking.aggregate([
+          { $match: prevDateFilter },
+          {
+            $group: {
+              _id: "$status",
+              count: { $sum: 1 }
+            }
+          }
+        ]) : Promise.resolve([]),
+        this._getUrgentCasesCount(dateFilter),
+        prevDateFilter ? this._getUrgentCasesCount(prevDateFilter) : Promise.resolve(0)
       ]);
 
-      const {
-        healthCamps, elderly, motherChild, adolescents,
-        tuberculosis, hiv, leprosy, addiction, otherDiseases, pwd,
-        studyCenters, scStudents, dropouts, schools,
-        competitiveExams, boardPreparation,
-        cbucbo, entitlements, legalAid, workshops,
-        pendingLegalAid
-      } = dashboardStats;
+      const calculateTotal = (stats) => {
+        if (!stats) return 0;
+        const {
+          healthCamps, elderly, motherChild, adolescents,
+          tuberculosis, hiv, leprosy, addiction, otherDiseases, pwd,
+          studyCenters, scStudents, dropouts, schools,
+          competitiveExams, boardPreparation,
+          cbucbo, entitlements, legalAid, workshops
+        } = stats;
+        
+        return healthCamps + elderly + motherChild + adolescents + 
+               tuberculosis + hiv + leprosy + addiction + otherDiseases + pwd +
+               studyCenters + scStudents + dropouts + schools + competitiveExams + boardPreparation +
+               cbucbo + entitlements + legalAid + workshops;
+      };
 
-      const healthTotal = healthCamps + elderly + motherChild + adolescents + 
-                         tuberculosis + hiv + leprosy + addiction + 
-                         otherDiseases + pwd;
-      
-      const educationTotal = studyCenters + scStudents + dropouts + 
-                            schools + competitiveExams + boardPreparation;
-      
-      const socialJusticeTotal = cbucbo + entitlements + legalAid + workshops;
-      
-      const totalBeneficiaries = healthTotal + educationTotal + socialJusticeTotal;
+      const totalBeneficiaries = calculateTotal(dashboardStats);
+      const prevTotalBeneficiaries = calculateTotal(prevDashboardStats);
 
       // Process tracking stats
       const trackingStatsMap = trackingStats.reduce((acc, stat) => {
@@ -103,10 +115,18 @@ class AnalyticsService {
         return acc;
       }, {});
 
-      const activeCases = trackingStatsMap.active || 0;
-      const completedCases = trackingStatsMap.completed || 0;
-      const pendingCases = trackingStatsMap.pending || 0;
-      const onHoldCases = trackingStatsMap.on_hold || 0;
+      const prevTrackingStatsMap = prevTrackingStats.reduce((acc, stat) => {
+        acc[stat._id] = stat.count;
+        return acc;
+      }, {});
+
+      const activeCases = trackingStatsMap["In Progress"] || 0;
+      const completedCases = trackingStatsMap["Completed"] || 0;
+      const pendingCases = trackingStatsMap["Pending"] || 0;
+      const onHoldCases = trackingStatsMap["On Hold"] || 0;
+
+      const prevActiveCases = prevTrackingStatsMap["In Progress"] || 0;
+      const prevCompletedCases = prevTrackingStatsMap["Completed"] || 0;
 
       const result = {
         totalBeneficiaries,
@@ -114,12 +134,18 @@ class AnalyticsService {
         completedCases,
         pendingCases,
         onHoldCases,
-        pendingLegalAid: pendingLegalAid !== undefined ? pendingLegalAid : 0,
-        urgentCases: await this._getUrgentCasesCount(),
+        pendingLegalAid: dashboardStats.pendingLegalAid !== undefined ? dashboardStats.pendingLegalAid : 0,
+        urgentCases,
+        previousPeriod: {
+          totalBeneficiaries: prevTotalBeneficiaries,
+          activeCases: prevActiveCases,
+          completedCases: prevCompletedCases,
+          urgentCases: prevUrgentCases
+        },
         moduleBreakdown: {
-          health: healthTotal,
-          education: educationTotal,
-          socialJustice: socialJusticeTotal
+          health: dashboardStats.healthCamps + dashboardStats.elderly + dashboardStats.motherChild + dashboardStats.adolescents + dashboardStats.tuberculosis + dashboardStats.hiv + dashboardStats.leprosy + dashboardStats.addiction + dashboardStats.otherDiseases + dashboardStats.pwd,
+          education: dashboardStats.studyCenters + dashboardStats.scStudents + dashboardStats.dropouts + dashboardStats.schools + dashboardStats.competitiveExams + dashboardStats.boardPreparation,
+          socialJustice: dashboardStats.cbucbo + dashboardStats.entitlements + dashboardStats.legalAid + dashboardStats.workshops
         },
         moduleDetails: dashboardStats,
         recentBeneficiaries: await this._getRecentBeneficiariesCount()
@@ -239,63 +265,104 @@ class AnalyticsService {
   }
 
   /**
-   * Get age distribution across all modules
+   * Get age distribution across all modules with breakdown by module
    */
   async getAgeDistribution() {
     try {
-      const models = await this._getAllModelsWithAge();
-      const ageGroups = {
-        "0-17": 0,
-        "18-25": 0,
-        "26-35": 0,
-        "36-45": 0,
-        "46-55": 0,
-        "55+": 0
+      const ageLabels = {
+        "0-17": "Children (0-17)",
+        "18-25": "Youth (18-25)",
+        "26-35": "Young Adult (26-35)",
+        "36-45": "Adult (36-45)",
+        "46-55": "Middle Aged (46-55)",
+        "55+": "Seniors (55+)"
       };
 
-      for (const Model of models) {
-        const results = await Model.aggregate([
-          {
-            $project: {
-              age: {
-                $floor: {
-                  $divide: [
-                    { $subtract: [new Date(), "$dateOfBirth"] },
-                    365.25 * 24 * 60 * 60 * 1000
+      const ageGroups = {
+        "0-17": { name: ageLabels["0-17"], health: 0, education: 0, socialJustice: 0, total: 0 },
+        "18-25": { name: ageLabels["18-25"], health: 0, education: 0, socialJustice: 0, total: 0 },
+        "26-35": { name: ageLabels["26-35"], health: 0, education: 0, socialJustice: 0, total: 0 },
+        "36-45": { name: ageLabels["36-45"], health: 0, education: 0, socialJustice: 0, total: 0 },
+        "46-55": { name: ageLabels["46-55"], health: 0, education: 0, socialJustice: 0, total: 0 },
+        "55+": { name: ageLabels["55+"], health: 0, education: 0, socialJustice: 0, total: 0 }
+      };
+
+      const healthModels = [Elderly, MotherChild, Adolescent, Tuberculosis, HIV, Leprosy, Addiction, OtherDisease, PWD];
+      const educationModels = [SCStudent, Dropout];
+      // Social justice models usually don't have age/gender of individuals, but groups. 
+      // If there were individual beneficiaries in social justice, we'd add them here.
+
+      const processModels = async (models, moduleKey) => {
+        for (const Model of models) {
+          const results = await Model.aggregate([
+            {
+              $project: {
+                resolvedAge: {
+                  $ifNull: [
+                    "$age",
+                    "$ageOfChild",
+                    "$ageOfMother",
+                    {
+                      $cond: {
+                        if: { $and: [{ $gt: ["$dateOfBirth", null] }, { $ne: ["$dateOfBirth", ""] }] },
+                        then: {
+                          $floor: {
+                            $divide: [
+                              { $subtract: [new Date(), "$dateOfBirth"] },
+                              365.25 * 24 * 60 * 60 * 1000
+                            ]
+                          }
+                        },
+                        else: null
+                      }
+                    }
                   ]
                 }
               }
+            },
+            {
+              $group: {
+                _id: {
+                  $switch: {
+                    branches: [
+                      { case: { $lt: ["$resolvedAge", 18] }, then: "0-17" },
+                      { case: { $lt: ["$resolvedAge", 26] }, then: "18-25" },
+                      { case: { $lt: ["$resolvedAge", 36] }, then: "26-35" },
+                      { case: { $lt: ["$resolvedAge", 46] }, then: "36-45" },
+                      { case: { $lt: ["$resolvedAge", 56] }, then: "46-55" }
+                    ],
+                    default: "55+"
+                  }
+                },
+                count: { $sum: 1 }
+              }
             }
-          },
-          {
-            $group: {
-              _id: {
-                $switch: {
-                  branches: [
-                    { case: { $lt: ["$age", 18] }, then: "0-17" },
-                    { case: { $lt: ["$age", 26] }, then: "18-25" },
-                    { case: { $lt: ["$age", 36] }, then: "26-35" },
-                    { case: { $lt: ["$age", 46] }, then: "36-45" },
-                    { case: { $lt: ["$age", 56] }, then: "46-55" }
-                  ],
-                  default: "55+"
-                }
-              },
-              count: { $sum: 1 }
+          ]);
+
+          results.forEach(result => {
+            if (result._id && ageGroups[result._id]) {
+              ageGroups[result._id][moduleKey] += result.count;
+              ageGroups[result._id].total += result.count;
             }
-          }
-        ]);
+          });
+        }
+      };
 
-        results.forEach(result => {
-          if (ageGroups.hasOwnProperty(result._id)) {
-            ageGroups[result._id] += result.count;
-          }
-        });
-      }
+      await Promise.all([
+        processModels(healthModels, "health"),
+        processModels(educationModels, "education")
+      ]);
 
-      return Object.entries(ageGroups)
-        .filter(([_, value]) => value > 0)
-        .map(([name, value]) => ({ name, value }));
+      return Object.values(ageGroups)
+        .filter(group => group.total > 0)
+        .map(group => ({
+          name: group.name,
+          health: group.health,
+          education: group.education,
+          socialJustice: group.socialJustice,
+          total: group.total,
+          value: group.total // Keep value for backward compatibility with simple charts
+        }));
     } catch (error) {
       console.error("Error getting age distribution:", error);
       throw error;
@@ -369,10 +436,10 @@ class AnalyticsService {
       }, {});
 
       return [
-        { name: "Active", value: statusMap.active || 0 },
-        { name: "Pending", value: statusMap.pending || 0 },
-        { name: "Completed", value: statusMap.completed || 0 },
-        { name: "On Hold", value: statusMap.on_hold || 0 }
+        { name: "In Progress", value: statusMap["In Progress"] || 0 },
+        { name: "Pending", value: statusMap["Pending"] || 0 },
+        { name: "Completed", value: statusMap["Completed"] || 0 },
+        { name: "On Hold", value: statusMap["On Hold"] || 0 }
       ].filter(item => item.value > 0);
     } catch (error) {
       console.error("Error getting status distribution:", error);
@@ -526,6 +593,47 @@ class AnalyticsService {
     return { createdAt: { $gte: startDate } };
   }
 
+  _getPreviousDateFilter(dateRange) {
+    const now = new Date();
+    let startDate, endDate;
+
+    switch (dateRange) {
+      case "today":
+        startDate = new Date(now.setHours(0, 0, 0, 0) - 24 * 60 * 60 * 1000);
+        endDate = new Date(now.setHours(0, 0, 0, 0));
+        break;
+      case "last_7_days":
+        startDate = new Date(now.setDate(now.getDate() - 14));
+        endDate = new Date(new Date().setDate(new Date().getDate() - 7));
+        break;
+      case "last_30_days":
+        startDate = new Date(now.setDate(now.getDate() - 60));
+        endDate = new Date(new Date().setDate(new Date().getDate() - 30));
+        break;
+      case "last_90_days":
+        startDate = new Date(now.setDate(now.getDate() - 180));
+        endDate = new Date(new Date().setDate(new Date().getDate() - 90));
+        break;
+      case "last_year":
+        startDate = new Date(now.setFullYear(now.getFullYear() - 2));
+        endDate = new Date(new Date().setFullYear(new Date().getFullYear() - 1));
+        break;
+      case "this_month":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        endDate = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+        break;
+      case "last_month":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() - 1, 0, 23, 59, 59);
+        break;
+      default:
+        return null; // No previous period for "all time"
+    }
+
+    return { createdAt: { $gte: startDate, $lte: endDate } };
+  }
+
+
   _getLast6Months() {
     const months = [];
     const now = new Date();
@@ -604,13 +712,15 @@ class AnalyticsService {
     ];
   }
 
-  async _getUrgentCasesCount() {
+  async _getUrgentCasesCount(dateFilter = {}) {
     try {
-      return await Tracking.countDocuments({
-        status: { $in: ["active", "pending"] },
-        priority: "high",
-        followUpDate: { $lt: new Date() }
-      });
+      const match = {
+        status: { $in: ["In Progress", "Pending"] },
+        priority: { $regex: /^high$|^urgent$/i },
+        followUpDate: { $lt: new Date() },
+        ...dateFilter
+      };
+      return await Tracking.countDocuments(match);
     } catch (error) {
       return 0;
     }

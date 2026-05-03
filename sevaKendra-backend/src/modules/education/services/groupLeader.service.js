@@ -155,7 +155,7 @@ class GroupLeaderService {
     const stats = await GroupLeader.aggregate([
       {
         $group: {
-          _id: "$status",
+          _id: { $ifNull: ["$status", "Active"] },
           count: { $sum: 1 },
         },
       },

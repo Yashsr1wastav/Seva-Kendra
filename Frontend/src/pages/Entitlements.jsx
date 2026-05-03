@@ -83,6 +83,7 @@ import { entitlementsAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -245,7 +246,17 @@ const Entitlements = () => {
     "Other",
   ];
 
-  const statusOptions = ["Pending", "In Progress", "Resolved", "Rejected"];
+  const statusOptions = [
+    "Applied",
+    "Approved",
+    "Disbursed",
+    "Rejected",
+    "Pending",
+    "In Progress",
+    "Resolved",
+    "Under Verification",
+    "On Hold",
+  ];
 
   const genderOptions = ["Male", "Female", "Other"];
 
@@ -432,11 +443,14 @@ const Entitlements = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "Disbursed":
+      case "Resolved":
         return "bg-green-100 text-green-800 hover:bg-green-200";
       case "Approved":
         return "bg-blue-100 text-blue-800 hover:bg-blue-200";
       case "Applied":
+      case "Pending":
         return "bg-yellow-100 text-yellow-800 hover:bg-yellow-200";
+      case "In Progress":
       case "Under Verification":
         return "bg-purple-100 text-purple-800 hover:bg-purple-200";
       case "Rejected":
@@ -452,17 +466,18 @@ const Entitlements = () => {
   const getStatusIcon = (status) => {
     switch (status) {
       case "Disbursed":
+      case "Resolved":
         return <CheckCircle className="h-3 w-3" />;
       case "Approved":
         return <CheckCircle className="h-3 w-3" />;
       case "Applied":
-        return <Clock className="h-3 w-3" />;
+      case "Pending":
+      case "In Progress":
       case "Under Verification":
+      case "On Hold":
         return <Clock className="h-3 w-3" />;
       case "Rejected":
         return <XCircle className="h-3 w-3" />;
-      case "On Hold":
-        return <Clock className="h-3 w-3" />;
       default:
         return <Clock className="h-3 w-3" />;
     }
@@ -518,6 +533,18 @@ const Entitlements = () => {
                 </Button>
               )}
             </div>
+
+            <GuidelinesCard
+              title="Entitlement Guidelines"
+              description="Follow these steps to keep entitlement records complete and consistent."
+              items={[
+                "Double-check beneficiary ID and household code for consistency.",
+                "Specify the exact type of entitlement being applied for (Pension, Aadhaar, etc.).",
+                "Update application status regularly (Pending, In Progress, Resolved).",
+                "Ensure documentation status is accurate to track pending requirements.",
+                "Record any amount disbursed to beneficiaries once the process is complete.",
+              ]}
+            />
 
             {/* Search and Filters */}
             <Card>
@@ -901,7 +928,7 @@ const Entitlements = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="householdCode">Household Code *</Label>
+                      <Label htmlFor="householdCode">Household Code</Label>
                       <Input
                         id="householdCode"
                         value={formData.householdCode}
@@ -912,11 +939,10 @@ const Entitlements = () => {
                           })
                         }
                         placeholder="Enter household code"
-                        required
                       />
                     </div>
                     <div>
-                      <Label htmlFor="idCode">ID Code *</Label>
+                      <Label htmlFor="idCode">ID Code</Label>
                       <Input
                         id="idCode"
                         value={formData.idCode}
@@ -927,7 +953,6 @@ const Entitlements = () => {
                           })
                         }
                         placeholder="Enter ID code"
-                        required
                       />
                     </div>
                     <div>
@@ -1266,30 +1291,151 @@ const Entitlements = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="edit-beneficiaryId">
-                        Beneficiary ID
-                      </Label>
+                      <Label htmlFor="edit-householdCode">Household Code</Label>
                       <Input
-                        id="edit-beneficiaryId"
-                        value={formData.beneficiaryId}
+                        id="edit-householdCode"
+                        value={formData.householdCode}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            beneficiaryId: e.target.value,
+                            householdCode: e.target.value,
                           })
                         }
-                        placeholder="Enter beneficiary ID"
+                        placeholder="Enter household code"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="edit-status">Status</Label>
+                      <Label htmlFor="edit-idCode">ID Code</Label>
+                      <Input
+                        id="edit-idCode"
+                        value={formData.idCode}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            idCode: e.target.value,
+                          })
+                        }
+                        placeholder="Enter ID code"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-name">Name *</Label>
+                      <Input
+                        id="edit-name"
+                        value={formData.name}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            name: e.target.value,
+                          })
+                        }
+                        placeholder="Enter name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-gender">Gender</Label>
+                      <Select
+                        value={formData.gender}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, gender: value })
+                        }
+                      >
+                        <SelectTrigger id="edit-gender">
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {genderOptions.map((gender) => (
+                            <SelectItem key={gender} value={gender}>
+                              {gender}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-age">Age</Label>
+                      <Input
+                        id="edit-age"
+                        type="number"
+                        min="0"
+                        max="120"
+                        value={formData.age}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            age: e.target.value,
+                          })
+                        }
+                        placeholder="Enter age"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-headOfHousehold">
+                        Head of Household
+                      </Label>
+                      <Input
+                        id="edit-headOfHousehold"
+                        value={formData.headOfHousehold}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            headOfHousehold: e.target.value,
+                          })
+                        }
+                        placeholder="Enter head of household"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-contactNo">Contact Number</Label>
+                      <Input
+                        id="edit-contactNo"
+                        value={formData.contactNo}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            contactNo: e.target.value,
+                          })
+                        }
+                        placeholder="Enter contact number"
+                        pattern="[6-9][0-9]{9}"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-wardNo">Ward Number *</Label>
+                      <WardCombobox
+                        id="edit-wardNo"
+                        value={formData.wardNo}
+                        onChange={(value) =>
+                          setFormData({ ...formData, wardNo: value })
+                        }
+                        options={wardOptions}
+                        placeholder="Select ward"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-habitation">Habitation</Label>
+                      <Input
+                        id="edit-habitation"
+                        value={formData.habitation}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            habitation: e.target.value,
+                          })
+                        }
+                        placeholder="Enter habitation"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-status">Overall Status</Label>
                       <Select
                         value={formData.status}
                         onValueChange={(value) =>
                           setFormData({ ...formData, status: value })
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger id="edit-status">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1300,6 +1446,51 @@ const Entitlements = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-entitlementType">Entitlement Type</Label>
+                      <Select
+                        value={formData.entitlementType}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, entitlementType: value })
+                        }
+                      >
+                        <SelectTrigger id="edit-entitlementType">
+                          <SelectValue placeholder="Select entitlement type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {entitlementTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-applicationDate">Application Date</Label>
+                      <Input
+                        id="edit-applicationDate"
+                        type="date"
+                        value={formData.applicationDate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            applicationDate: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label htmlFor="edit-remarks">Remarks</Label>
+                      <Textarea
+                        id="edit-remarks"
+                        value={formData.remarks}
+                        onChange={(e) =>
+                          setFormData({ ...formData, remarks: e.target.value })
+                        }
+                        placeholder="Enter remarks"
+                      />
                     </div>
                   </div>
 
@@ -1384,6 +1575,17 @@ const Entitlements = () => {
                           </Label>
                           <p>{selectedEntitlement.projectResponsible}</p>
                         </div>
+                        <div>
+                          <Label className="font-semibold">Overall Status</Label>
+                          <Badge
+                            className={getStatusColor(selectedEntitlement.status)}
+                          >
+                            {getStatusIcon(selectedEntitlement.status)}
+                            <span className="ml-1">
+                              {selectedEntitlement.status}
+                            </span>
+                          </Badge>
+                        </div>
                       </div>
                     </div>
 
@@ -1428,21 +1630,6 @@ const Entitlements = () => {
                                 .typeOfDocument || "N/A"}
                             </p>
                           </div>
-                          <div>
-                            <Label className="font-semibold">Status</Label>
-                            <Badge
-                              className={getStatusColor(
-                                selectedEntitlement.idProofAndDomicile.status
-                              )}
-                            >
-                              {getStatusIcon(
-                                selectedEntitlement.idProofAndDomicile.status
-                              )}
-                              <span className="ml-1">
-                                {selectedEntitlement.idProofAndDomicile.status}
-                              </span>
-                            </Badge>
-                          </div>
                           {selectedEntitlement.idProofAndDomicile
                             .dateOfReporting && (
                             <div>
@@ -1481,21 +1668,6 @@ const Entitlements = () => {
                           Schemes
                         </h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label className="font-semibold">Status</Label>
-                            <Badge
-                              className={getStatusColor(
-                                selectedEntitlement.schemes.status
-                              )}
-                            >
-                              {getStatusIcon(
-                                selectedEntitlement.schemes.status
-                              )}
-                              <span className="ml-1">
-                                {selectedEntitlement.schemes.status}
-                              </span>
-                            </Badge>
-                          </div>
                         </div>
                         {selectedEntitlement.schemes.eligibleSchemes && (
                           <div>
@@ -1581,3 +1753,6 @@ const Entitlements = () => {
 };
 
 export default Entitlements;
+
+
+

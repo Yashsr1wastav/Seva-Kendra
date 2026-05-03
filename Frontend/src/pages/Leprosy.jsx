@@ -52,6 +52,7 @@ import {
 import { leprosyAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const Leprosy = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -267,6 +268,17 @@ const Leprosy = () => {
         </header>
 
         <main className="flex-1 overflow-auto p-6">
+          <GuidelinesCard
+            title="Leprosy Care Guidelines"
+            description="Ensure timely treatment and support for leprosy-affected individuals."
+            items={[
+              "Record the type of leprosy (MB or PB) and treatment duration.",
+              "Monitor physical disability status and physiotherapy sessions.",
+              "Track medication supply and adherence to MDT (Multi-Drug Therapy).",
+              "Document family awareness and stigma reduction efforts.",
+              "Ensure regular follow-ups to prevent secondary complications.",
+            ]}
+          />
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -616,14 +628,13 @@ const Leprosy = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="contactNo">Contact Number *</Label>
+                <Label htmlFor="contactNo">Contact Number</Label>
                 <Input
                   id="contactNo"
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleInputChange}
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -1035,3 +1046,6 @@ const Leprosy = () => {
 };
 
 export default Leprosy;
+
+
+

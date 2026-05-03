@@ -85,6 +85,7 @@ import { workshopAndAwarenessAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -344,6 +345,18 @@ const Workshops = () => {
                 </Button>
               )}
             </div>
+
+            <GuidelinesCard
+              title="Workshop & Awareness Guidelines"
+              description="Standardize documentation for community outreach and capacity building activities."
+              items={[
+                "Identify the target group correctly (SHG, Youth, CBUCBO, etc.).",
+                "Ensure accurate reporting of the total number of participants.",
+                "Document details of resource persons and the training agenda.",
+                "Highlight key outcomes and takeaways from the session.",
+                "Maintain group-wise records for longitudinal development tracking.",
+              ]}
+            />
 
             {/* Search and Filters */}
             <Card>
@@ -1085,3 +1098,6 @@ const Workshops = () => {
 };
 
 export default Workshops;
+
+
+

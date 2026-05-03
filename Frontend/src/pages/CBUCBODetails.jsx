@@ -80,6 +80,7 @@ import { cbucboDetailsAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -291,12 +292,17 @@ const CBUCBODetails = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = { ...formData };
+      if (!payload.contactNo || payload.contactNo.trim() === "") {
+        delete payload.contactNo;
+      }
+
       if (selectedGroup) {
-        await cbucboDetailsAPI.update(selectedGroup._id, formData);
+        await cbucboDetailsAPI.update(selectedGroup._id, payload);
         toast.success("CBUCBO group updated successfully");
         setIsEditModalOpen(false);
       } else {
-        await cbucboDetailsAPI.create(formData);
+        await cbucboDetailsAPI.create(payload);
         toast.success("CBUCBO group created successfully");
         setIsCreateModalOpen(false);
       }
@@ -415,6 +421,18 @@ const CBUCBODetails = () => {
                 </Button>
               )}
             </div>
+
+            <GuidelinesCard
+              title="Community Group Management Guidelines"
+              description="Standardize the monitoring and capacity building of local community organizations."
+              items={[
+                "Specify the correct Group Type (CBU, CBO, SHG, etc.) for accurate classification.",
+                "Document all capacity building trainings provided with their specific outcomes.",
+                "Maintain an updated list of total members and key contact persons (Leader/Mentor).",
+                "Ensure the 'Action Plan' field contains clear, time-bound objectives for the group.",
+                "Upload photo documentation (Before/Intermediate/After) to track physical progress.",
+              ]}
+            />
 
             {/* Search and Filters */}
             <Card>
@@ -857,7 +875,7 @@ const CBUCBODetails = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="contactNo">Contact Number *</Label>
+                      <Label htmlFor="contactNo">Contact Number</Label>
                       <Input
                         id="contactNo"
                         value={formData.contactNo}
@@ -869,7 +887,6 @@ const CBUCBODetails = () => {
                         }
                         placeholder="Enter contact number"
                         pattern="[6-9][0-9]{9}"
-                        required
                       />
                     </div>
                   </div>
@@ -1132,3 +1149,6 @@ const CBUCBODetails = () => {
 };
 
 export default CBUCBODetails;
+
+
+

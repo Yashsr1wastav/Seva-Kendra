@@ -80,6 +80,7 @@ import { pwdAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const DISABILITY_OPTIONS = [
   "Visual Impairment",
@@ -470,6 +471,17 @@ const PWD = () => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto p-6">
+          <GuidelinesCard
+            title="Disability Support Guidelines"
+            description="Focus on accessibility and inclusive support for Persons with Disabilities (PWD)."
+            items={[
+              "Capture the type and percentage of disability accurately as per certificate.",
+              "Track UDID card status and linkage with government schemes.",
+              "Document assistive devices provided and their current usage status.",
+              "Monitor participation in vocational training and employment status.",
+              "Ensure all records are updated with latest assessment results.",
+            ]}
+          />
           {/* Filters */}
           <Card className="mb-6">
             <CardHeader>
@@ -815,14 +827,13 @@ const PWD = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="contactNo">Contact Number *</Label>
+                <Label htmlFor="contactNo">Contact Number</Label>
                 <Input
                   id="contactNo"
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleInputChange}
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -1205,14 +1216,13 @@ const PWD = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="editContactNo">Contact Number *</Label>
+                <Label htmlFor="editContactNo">Contact Number</Label>
                 <Input
                   id="editContactNo"
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleInputChange}
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -1766,3 +1776,6 @@ const PWD = () => {
 };
 
 export default PWD;
+
+
+

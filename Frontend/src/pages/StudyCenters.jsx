@@ -87,6 +87,7 @@ import { studyCenterAPI, teacherAPI, groupLeaderAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -477,7 +478,8 @@ const StudyCenters = () => {
         learningOutcome: "",
         communityParticipation: "",
       },
-      teachers: center.teachers || [],
+      groupLeader: center.groupLeader?._id || center.groupLeader || "",
+      teachers: (center.teachers || []).map((t) => t._id || t),
     });
     setManualGroupLeader("");
     setManualTeachers({});
@@ -573,6 +575,18 @@ const StudyCenters = () => {
                 </Button>
               )}
             </div>
+
+            <GuidelinesCard
+              title="Study Center Entry Guidelines"
+              description="Maintain high standards of documentation for all study centers."
+              items={[
+                "Register new students with their full names and parent details.",
+                "Assign students to the correct study center and ward.",
+                "Track attendance and academic progress regularly.",
+                "Document any special needs or support required by students.",
+                "Maintain up-to-date contact information for parents/guardians.",
+              ]}
+            />
 
             {/* Search and Filters */}
             <Card>
@@ -836,13 +850,21 @@ const StudyCenters = () => {
                               <TooltipTrigger asChild>
                                 <span
                                   className="block truncate"
-                                  title={center.groupLeader}
+                                  title={
+                                    center.groupLeader?.firstName
+                                      ? `${center.groupLeader.firstName} ${center.groupLeader.lastName}`
+                                      : center.groupLeaderName || "N/A"
+                                  }
                                 >
-                                  {center.groupLeader}
+                                  {center.groupLeader?.firstName
+                                    ? `${center.groupLeader.firstName} ${center.groupLeader.lastName}`
+                                    : center.groupLeaderName || "N/A"}
                                 </span>
                               </TooltipTrigger>
                               <TooltipContent>
-                                {center.groupLeader}
+                                {center.groupLeader?.firstName
+                                  ? `${center.groupLeader.firstName} ${center.groupLeader.lastName}`
+                                  : center.groupLeaderName || "N/A"}
                               </TooltipContent>
                             </Tooltip>
                           </TableCell>
@@ -2077,13 +2099,21 @@ const StudyCenters = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label className="font-semibold">Group Leader</Label>
-                          <p>{selectedCenter.groupLeader}</p>
+                          <p>
+                            {selectedCenter.groupLeader?.firstName
+                              ? `${selectedCenter.groupLeader.firstName} ${selectedCenter.groupLeader.lastName}`
+                              : selectedCenter.groupLeaderName || "N/A"}
+                          </p>
                         </div>
                         <div>
                           <Label className="font-semibold">
                             Group Leader Contact
                           </Label>
-                          <p>{selectedCenter.groupLeaderContact}</p>
+                          <p>
+                            {selectedCenter.groupLeader?.phoneNumber ||
+                              selectedCenter.groupLeaderContact ||
+                              "N/A"}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -2093,19 +2123,54 @@ const StudyCenters = () => {
                       <h3 className="text-lg font-semibold border-b pb-2">
                         Teachers
                       </h3>
-                      {selectedCenter.teacherNames &&
-                      selectedCenter.teacherNames.length > 0 ? (
-                        <div className="space-y-2">
-                          {selectedCenter.teacherNames.map((name, index) => (
+                      {(selectedCenter.teachers &&
+                        selectedCenter.teachers.length > 0) ||
+                      (selectedCenter.teacherNames &&
+                        selectedCenter.teacherNames.length > 0) ? (
+                        <div className="space-y-4">
+                          {/* Populated Teachers */}
+                          {selectedCenter.teachers?.map((teacher, index) => (
                             <div
-                              key={index}
-                              className="flex justify-between items-center p-3 bg-secondary/50 rounded"
+                              key={`pop-${index}`}
+                              className="grid grid-cols-1 md:grid-cols-2 gap-4"
                             >
-                              <span className="font-medium">{name}</span>
-                              <span className="text-sm text-muted-foreground">
-                                {selectedCenter.teacherContacts?.[index] ||
-                                  "N/A"}
-                              </span>
+                              <div>
+                                <Label className="font-semibold">
+                                  Teacher Name
+                                </Label>
+                                <p>
+                                  {teacher.firstName} {teacher.lastName}
+                                </p>
+                              </div>
+                              <div>
+                                <Label className="font-semibold">
+                                  Teacher Contact
+                                </Label>
+                                <p>{teacher.phoneNumber || "N/A"}</p>
+                              </div>
+                            </div>
+                          ))}
+                          {/* Legacy Teachers */}
+                          {selectedCenter.teacherNames?.map((name, index) => (
+                            <div
+                              key={`leg-${index}`}
+                              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                            >
+                              <div>
+                                <Label className="font-semibold">
+                                  Teacher Name
+                                </Label>
+                                <p>{name}</p>
+                              </div>
+                              <div>
+                                <Label className="font-semibold">
+                                  Teacher Contact
+                                </Label>
+                                <p>
+                                  {selectedCenter.teacherContacts?.[index] ||
+                                    "N/A"}
+                                </p>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -2212,3 +2277,6 @@ const StudyCenters = () => {
 };
 
 export default StudyCenters;
+
+
+

@@ -29,12 +29,12 @@ class TeacherService {
 
     // Filter by status
     if (status) {
-      filter.status = status;
+      filter.status = { $regex: new RegExp(`^${status}$`, "i") };
     }
 
     // Filter by specialization
     if (specialization) {
-      filter.specialization = specialization;
+      filter.specialization = { $regex: new RegExp(`^${specialization}$`, "i") };
     }
 
     const { skip, limitNum } = getPaginationOptions(page, limit);
@@ -166,7 +166,7 @@ class TeacherService {
     const stats = await Teacher.aggregate([
       {
         $group: {
-          _id: "$status",
+          _id: { $ifNull: ["$status", "Active"] },
           count: { $sum: 1 },
         },
       },

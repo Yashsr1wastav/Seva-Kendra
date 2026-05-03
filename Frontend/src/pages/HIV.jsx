@@ -52,6 +52,7 @@ import {
 import { hivAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const HIV = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -270,6 +271,17 @@ const HIV = () => {
         </header>
 
         <main className="flex-1 overflow-auto p-6">
+          <GuidelinesCard
+            title="HIV/AIDS Support Guidelines"
+            description="Focus on comprehensive care and maintain the highest level of confidentiality."
+            items={[
+              "Capture CD4 counts and ART treatment details accurately.",
+              "Monitor regular hospital visits and medication supply.",
+              "Document counseling provided for mental and social support.",
+              "Track nutritional support and government scheme linkages.",
+              "Maintain strict confidentiality of HIV status in all records.",
+            ]}
+          />
           <Card className="mb-6 shadow-md hover:shadow-lg transition-shadow duration-300">
             <CardHeader className="bg-background from-slate-50 to-white">
               <CardTitle className="flex items-center space-x-2">
@@ -615,14 +627,13 @@ const HIV = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="contactNo">Contact Number *</Label>
+                <Label htmlFor="contactNo">Contact Number</Label>
                 <Input
                   id="contactNo"
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleInputChange}
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -1027,3 +1038,6 @@ const HIV = () => {
 };
 
 export default HIV;
+
+
+

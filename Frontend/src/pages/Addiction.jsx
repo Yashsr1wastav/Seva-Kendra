@@ -52,6 +52,7 @@ import {
 import { addictionAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const Addiction = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -280,6 +281,17 @@ const Addiction = () => {
         </header>
 
         <main className="flex-1 overflow-auto p-6">
+          <GuidelinesCard
+            title="Addiction Record Guidelines"
+            description="Accurate documentation is crucial for effective rehabilitation and follow-up care."
+            items={[
+              "Record the type and duration of addiction for accurate assessment.",
+              "Track counseling sessions and medical treatment progress.",
+              "Document family involvement and support system details.",
+              "Set follow-up dates for post-rehabilitation monitoring.",
+              "Maintain high standards of confidentiality for all records.",
+            ]}
+          />
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -613,14 +625,13 @@ const Addiction = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="contactNo">Contact Number *</Label>
+                <Label htmlFor="contactNo">Contact Number</Label>
                 <Input
                   id="contactNo"
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleInputChange}
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -633,13 +644,12 @@ const Addiction = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="householdCode">Household Code *</Label>
+                <Label htmlFor="householdCode">Household Code</Label>
                 <Input
                   id="householdCode"
                   name="householdCode"
                   value={formData.householdCode}
                   onChange={handleInputChange}
-                  required
                 />
               </div>
               <div>
@@ -1098,3 +1108,6 @@ const Addiction = () => {
 };
 
 export default Addiction;
+
+
+

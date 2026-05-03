@@ -138,20 +138,6 @@ const scStudentSchema = new mongoose.Schema(
       trim: true,
     },
     // Assessment Details
-    dateOfMedicalScreening: {
-      type: Date,
-    },
-    medicalScreeningResults: {
-      type: String,
-      trim: true,
-    },
-    dateOfPsychologicalAssessment: {
-      type: Date,
-    },
-    psychologicalScreeningResults: {
-      type: String,
-      trim: true,
-    },
     dateOfEducationalAssessment: {
       type: Date,
     },

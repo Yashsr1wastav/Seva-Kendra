@@ -78,6 +78,7 @@ import { competitiveExamAPI, scStudentAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const EXAM_TYPE_OPTIONS = [
   "JEE Main",
@@ -582,6 +583,18 @@ const CompetitiveExams = () => {
                 </Button>
               )}
             </div>
+
+            <GuidelinesCard
+              title="Competitive Exam Tracking Guidelines"
+              description="Help aspirants navigate through various competitive exams effectively."
+              items={[
+                "Select all relevant exam types the student is preparing for.",
+                "Track the current status (Preparing, Qualified, Not Qualified).",
+                "Document enrollment dates and project-responsible staff.",
+                "Record career counseling reports and individual care plans.",
+                "Capture exam application dates and upcoming exam schedules.",
+              ]}
+            />
 
             {/* Search and Filters */}
             <Card>
@@ -1585,3 +1598,6 @@ const CompetitiveExams = () => {
 };
 
 export default CompetitiveExams;
+
+
+

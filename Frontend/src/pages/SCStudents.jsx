@@ -72,11 +72,15 @@ import {
   Eye,
   RefreshCw,
   Menu,
+  GraduationCap,
+  BookOpen,
+  Home,
 } from "lucide-react";
 import { scStudentAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -147,22 +151,22 @@ const SCStudents = () => {
   const [scStudents, setScStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState({
-    wardNo: "",
-    gender: "",
-    projectResponsible: "",
-  });
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
     total: 0,
     pages: 0,
   });
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [wardFilter, setWardFilter] = useState("all");
+  const [stats, setStats] = useState({ total: 0, schoolGoing: 0, dropouts: 0, attendees: 0 });
   const [filterOptions, setFilterOptions] = useState({
+    studentStatuses: [],
     wardNumbers: [],
     genders: [],
-    projectResponsibles: [],
+    projectResponsibles: []
   });
+
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -188,10 +192,6 @@ const SCStudents = () => {
     dateOfReporting: "",
     reportedBy: "",
     natureOfIssue: "",
-    dateOfMedicalScreening: "",
-    medicalScreeningResults: "",
-    dateOfPsychologicalAssessment: "",
-    psychologicalScreeningResults: "",
     dateOfEducationalAssessment: "",
     educationalScreeningResults: "",
     dateOfCareerCounselling: "",
@@ -204,14 +204,15 @@ const SCStudents = () => {
   const isValidMobileNumber = (value) => /^[6-9]\d{9}$/.test(value);
 
   // Fetch SC students
-  const fetchScStudents = async () => {
+  const fetchStudents = async () => {
     setLoading(true);
     try {
       const params = {
         page: pagination.page,
         limit: pagination.limit,
         search: searchTerm,
-        ...filters,
+        studentStatus: statusFilter === "all" ? "" : statusFilter,
+        wardNo: wardFilter === "all" ? "" : wardFilter,
       };
 
       const response = await scStudentAPI.getAll(params);
@@ -225,22 +226,36 @@ const SCStudents = () => {
     }
   };
 
-  // Fetch filter options
-  const fetchFilterOptions = async () => {
+  const fetchStatsAndOptions = async () => {
     try {
-      const response = await scStudentAPI.getFilterOptions();
-      setFilterOptions(response.data);
+      const [statsRes, optionsRes] = await Promise.all([
+        scStudentAPI.getStats(),
+        scStudentAPI.getFilterOptions()
+      ]);
+
+      const statsData = statsRes.data.data;
+      const byStatus = statsData.byStatus || [];
+
+      setStats(prev => ({
+        ...prev,
+        total: statsData.total || 0,
+        schoolGoing: byStatus.find(s => s._id === "School-Going")?.count || 0,
+        dropouts: byStatus.find(s => s._id === "Dropout")?.count || 0,
+        attendees: byStatus.find(s => s._id === "Study Centre Attendee")?.count || 0,
+      }));
+
+      setFilterOptions(optionsRes.data.data);
     } catch (error) {
-      console.error("Error fetching filter options:", error);
+      console.error("Error fetching student stats/options:", error);
     }
   };
 
   useEffect(() => {
-    fetchScStudents();
-  }, [pagination.page, pagination.limit, searchTerm, filters]);
+    fetchStudents();
+  }, [pagination.page, pagination.limit, searchTerm, statusFilter, wardFilter]);
 
   useEffect(() => {
-    fetchFilterOptions();
+    fetchStatsAndOptions();
   }, []);
 
   // Handle form submission
@@ -327,10 +342,6 @@ const SCStudents = () => {
       dateOfReporting: "",
       reportedBy: "",
       natureOfIssue: "",
-      dateOfMedicalScreening: "",
-      medicalScreeningResults: "",
-      dateOfPsychologicalAssessment: "",
-      psychologicalScreeningResults: "",
       dateOfEducationalAssessment: "",
       educationalScreeningResults: "",
       dateOfCareerCounselling: "",
@@ -352,18 +363,10 @@ const SCStudents = () => {
       dateOfReporting: student.dateOfReporting
         ? new Date(student.dateOfReporting).toISOString().split("T")[0]
         : "",
-      dateOfMedicalScreening: student.dateOfMedicalScreening
-        ? new Date(student.dateOfMedicalScreening).toISOString().split("T")[0]
-        : "",
-      dateOfPsychologicalAssessment: student.dateOfPsychologicalAssessment
-        ? new Date(student.dateOfPsychologicalAssessment)
-            .toISOString()
-            .split("T")[0]
-        : "",
       dateOfEducationalAssessment: student.dateOfEducationalAssessment
         ? new Date(student.dateOfEducationalAssessment)
-            .toISOString()
-            .split("T")[0]
+          .toISOString()
+          .split("T")[0]
         : "",
       dateOfCareerCounselling: student.dateOfCareerCounselling
         ? new Date(student.dateOfCareerCounselling).toISOString().split("T")[0]
@@ -410,6 +413,9 @@ const SCStudents = () => {
               <div>
                 <h1 className="text-3xl font-bold text-foreground">
                   SC Students
+                  <span className="ml-2 text-lg font-semibold text-muted-foreground align-middle">
+                    ({pagination.total})
+                  </span>
                 </h1>
                 <p className="text-muted-foreground">Manage SC student records</p>
               </div>
@@ -420,6 +426,18 @@ const SCStudents = () => {
                 </Button>
               )}
             </div>
+            <GuidelinesCard
+              title="SC Student Data Guidelines"
+              description="Monitor the educational progress and welfare of SC students effectively."
+              items={[
+                "Verify student's current enrollment status (School-going/Dropout).",
+                "Capture family background and occupational details accurately.",
+                "Track results of medical, psychological, and educational assessments.",
+                "Document individual care plans and counseling session reports.",
+                "Maintain up-to-date documentation of academic progress and challenges.",
+              ]}
+            />
+
 
             {/* Search and Filters */}
             <Card>
@@ -439,6 +457,42 @@ const SCStudents = () => {
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="pl-10"
                     />
+                  </div>
+                  <div>
+                    <Select
+                      value={statusFilter}
+                      onValueChange={(val) => setStatusFilter(val)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Statuses</SelectItem>
+                        {filterOptions.studentStatuses?.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Select
+                      value={wardFilter}
+                      onValueChange={(val) => setWardFilter(val)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Ward" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Wards</SelectItem>
+                        {filterOptions.wardNumbers?.map((ward) => (
+                          <SelectItem key={ward} value={ward}>
+                            Ward {ward}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </CardContent>
@@ -890,6 +944,66 @@ const SCStudents = () => {
                         }
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="dateOfEducationalAssessment">
+                        Date of Educational Assessment
+                      </Label>
+                      <Input
+                        id="dateOfEducationalAssessment"
+                        type="date"
+                        value={formData.dateOfEducationalAssessment}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            dateOfEducationalAssessment: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="educationalScreeningResults">
+                        Educational Screening Results
+                      </Label>
+                      <Input
+                        id="educationalScreeningResults"
+                        value={formData.educationalScreeningResults}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            educationalScreeningResults: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dateOfCareerCounselling">
+                        Date of Career Counselling
+                      </Label>
+                      <Input
+                        id="dateOfCareerCounselling"
+                        type="date"
+                        value={formData.dateOfCareerCounselling}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            dateOfCareerCounselling: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="counselingReport">Counseling Report</Label>
+                      <Input
+                        id="counselingReport"
+                        value={formData.counselingReport}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            counselingReport: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
 
                   <DialogFooter>
@@ -1198,6 +1312,68 @@ const SCStudents = () => {
                         }
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="editDateOfEducationalAssessment">
+                        Date of Educational Assessment
+                      </Label>
+                      <Input
+                        id="editDateOfEducationalAssessment"
+                        type="date"
+                        value={formData.dateOfEducationalAssessment}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            dateOfEducationalAssessment: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editEducationalScreeningResults">
+                        Educational Screening Results
+                      </Label>
+                      <Input
+                        id="editEducationalScreeningResults"
+                        value={formData.educationalScreeningResults}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            educationalScreeningResults: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editDateOfCareerCounselling">
+                        Date of Career Counselling
+                      </Label>
+                      <Input
+                        id="editDateOfCareerCounselling"
+                        type="date"
+                        value={formData.dateOfCareerCounselling}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            dateOfCareerCounselling: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editCounselingReport">
+                        Counseling Report
+                      </Label>
+                      <Input
+                        id="editCounselingReport"
+                        value={formData.counselingReport}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            counselingReport: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
 
                   <DialogFooter>
@@ -1321,8 +1497,8 @@ const SCStudents = () => {
                           <p>
                             {selectedStudent.dateOfReporting
                               ? new Date(
-                                  selectedStudent.dateOfReporting
-                                ).toLocaleDateString()
+                                selectedStudent.dateOfReporting
+                              ).toLocaleDateString()
                               : "N/A"}
                           </p>
                         </div>
@@ -1351,37 +1527,13 @@ const SCStudents = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label className="font-semibold">
-                            Date of Medical Screening
-                          </Label>
-                          <p>
-                            {selectedStudent.dateOfMedicalScreening
-                              ? new Date(
-                                  selectedStudent.dateOfMedicalScreening
-                                ).toLocaleDateString()
-                              : "N/A"}
-                          </p>
-                        </div>
-                        <div>
-                          <Label className="font-semibold">
-                            Date of Psychological Assessment
-                          </Label>
-                          <p>
-                            {selectedStudent.dateOfPsychologicalAssessment
-                              ? new Date(
-                                  selectedStudent.dateOfPsychologicalAssessment
-                                ).toLocaleDateString()
-                              : "N/A"}
-                          </p>
-                        </div>
-                        <div>
-                          <Label className="font-semibold">
                             Date of Educational Assessment
                           </Label>
                           <p>
                             {selectedStudent.dateOfEducationalAssessment
                               ? new Date(
-                                  selectedStudent.dateOfEducationalAssessment
-                                ).toLocaleDateString()
+                                selectedStudent.dateOfEducationalAssessment
+                              ).toLocaleDateString()
                               : "N/A"}
                           </p>
                         </div>
@@ -1392,32 +1544,12 @@ const SCStudents = () => {
                           <p>
                             {selectedStudent.dateOfCareerCounselling
                               ? new Date(
-                                  selectedStudent.dateOfCareerCounselling
-                                ).toLocaleDateString()
+                                selectedStudent.dateOfCareerCounselling
+                              ).toLocaleDateString()
                               : "N/A"}
                           </p>
                         </div>
                       </div>
-                      {selectedStudent.medicalScreeningResults && (
-                        <div>
-                          <Label className="font-semibold">
-                            Medical Screening Results
-                          </Label>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {selectedStudent.medicalScreeningResults}
-                          </p>
-                        </div>
-                      )}
-                      {selectedStudent.psychologicalScreeningResults && (
-                        <div>
-                          <Label className="font-semibold">
-                            Psychological Screening Results
-                          </Label>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {selectedStudent.psychologicalScreeningResults}
-                          </p>
-                        </div>
-                      )}
                       {selectedStudent.educationalScreeningResults && (
                         <div>
                           <Label className="font-semibold">
@@ -1466,3 +1598,6 @@ const SCStudents = () => {
 };
 
 export default SCStudents;
+
+
+

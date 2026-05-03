@@ -16,6 +16,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   BarChart,
   Bar,
@@ -107,6 +117,345 @@ import {
   beneficiaryAPI,
   trackingAPI,
 } from "../services/api";
+
+
+// Format number
+const formatNumber = (num) => {
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + "k";
+  }
+  return num.toString();
+};
+
+// Status Badge Component
+const StatusBadge = ({ status, label }) => {
+  const statusConfig = {
+    active: {
+      bg: "bg-green-900/30",
+      text: "text-green-400",
+      icon: "✓",
+    },
+    pending: {
+      bg: "bg-orange-900/30",
+      text: "text-orange-400",
+      icon: "⏱",
+    },
+    completed: {
+      bg: "bg-blue-900/30",
+      text: "text-blue-400",
+      icon: "✓",
+    },
+    urgent: {
+      bg: "bg-red-900/30",
+      text: "text-red-400",
+      icon: "!",
+    },
+  };
+  const config = statusConfig[status] || statusConfig.active;
+  return (
+    <Badge className={`${config.bg} ${config.text} border-0`}>
+      {label || status.toUpperCase()}
+    </Badge>
+  );
+};
+
+// KPI Card Component
+const KPICard = ({
+  title,
+  value,
+  icon: Icon,
+  trend,
+  trendValue,
+  trendLabel = "from last month",
+  bgColor,
+}) => (
+  <Card className="shadow-elevated hover:shadow-floating transition-all duration-300 border border-border bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card/70">
+    <CardContent className="p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{title}</p>
+          <p className="text-4xl font-bold text-foreground mt-2 leading-tight">
+            {formatNumber(value)}
+          </p>
+          {trend && (
+            <div className="flex items-center mt-3 pt-3 border-t border-border">
+              {trend === "up" ? (
+                <ArrowUpRight className="h-4 w-4 text-green-400 mr-1" />
+              ) : (
+                <ArrowDownRight className="h-4 w-4 text-red-400 mr-1" />
+              )}
+              <span
+                className={`text-sm font-semibold ${
+                  trend === "up" ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {trendValue}%
+              </span>
+              <span className="text-sm text-muted-foreground ml-2">
+                {trendLabel}
+              </span>
+            </div>
+          )}
+        </div>
+        <div className={`p-4 rounded-xl ${bgColor} shadow-lg`}>
+          <Icon className="h-7 w-7 text-white" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// Module Card Component
+const ModuleCard = ({ title, icon: Icon, stats, color, module, isExpanded, onToggle }) => {
+  const total = stats.totalCases || stats.totalStudents || 0;
+  
+  const categoryEntries = Object.entries(stats).filter(
+    ([key]) => key !== "totalCases" && key !== "totalStudents"
+  );
+
+  return (
+    <Card
+      className={`border-l-4 shadow-elevated hover:shadow-floating transition-all duration-300 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card/70 ${
+        color === "health"
+          ? "border-l-red-500"
+          : color === "education"
+          ? "border-l-blue-500"
+          : "border-l-purple-500"
+      }`}
+    >
+      <CardHeader
+        className="pb-3 cursor-pointer hover:bg-secondary/30 transition-colors rounded-t-lg"
+        onClick={() => onToggle(module)}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className={`p-3 rounded-xl shadow-md ${
+                color === "health"
+                  ? "bg-red-900/40 text-red-400"
+                  : color === "education"
+                  ? "bg-blue-900/40 text-blue-400"
+                  : "bg-purple-900/40 text-purple-400"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+              <CardDescription className="text-xs mt-1">
+                {categoryEntries.length} categories
+              </CardDescription>
+            </div>
+          </div>
+          <div className="text-right flex flex-col items-end">
+            <p className="text-3xl font-bold text-foreground">{total}</p>
+            <p className="text-xs text-muted-foreground">Total Cases</p>
+          </div>
+        </div>
+      </CardHeader>
+
+      {isExpanded && (
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-2 gap-3 mt-2">
+            {categoryEntries.map(([key, value]) => (
+              <div
+                key={key}
+                className={`p-3 rounded-lg border ${
+                  color === "health"
+                    ? "border-red-500/30 bg-red-500/10"
+                    : color === "education"
+                    ? "border-blue-500/30 bg-blue-500/10"
+                    : "border-purple-500/30 bg-purple-500/10"
+                }`}
+              >
+                <p className="text-xs font-medium text-foreground capitalize">
+                  {key.replace(/([A-Z])/g, " $1").trim()}
+                </p>
+                <p className="text-xl font-bold text-foreground">{value}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+};
+
+// Performance Table Component
+const PerformanceTable = ({
+  performanceData,
+  isEditingTargets,
+  setIsEditingTargets,
+  targetInputs,
+  onSaveTargets,
+}) => {
+  const [localTargets, setLocalTargets] = useState(targetInputs);
+
+  // Sync local targets when the dialog opens
+  useEffect(() => {
+    if (isEditingTargets) {
+      setLocalTargets(targetInputs);
+    }
+  }, [isEditingTargets, targetInputs]);
+
+  const handleSave = () => {
+    onSaveTargets(localTargets);
+  };
+
+  return (
+    <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            Performance Overview
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEditingTargets(true)}
+          >
+            Edit Targets
+          </Button>
+        </CardTitle>
+        <CardDescription>
+          Target vs. Completed across key programs
+        </CardDescription>
+      </CardHeader>
+
+      <Dialog open={isEditingTargets} onOpenChange={setIsEditingTargets}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Performance Targets</DialogTitle>
+            <DialogDescription>
+              Set new targets for the key programs. Changes will be saved
+              locally.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="health" className="text-right">
+                Health
+              </Label>
+              <Input
+                id="health"
+                type="number"
+                className="col-span-3"
+                value={localTargets.health}
+                onChange={(e) =>
+                  setLocalTargets({ ...localTargets, health: e.target.value })
+                }
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="education" className="text-right">
+                Education
+              </Label>
+              <Input
+                id="education"
+                type="number"
+                className="col-span-3"
+                value={localTargets.education}
+                onChange={(e) =>
+                  setLocalTargets({
+                    ...localTargets,
+                    education: e.target.value,
+                  })
+                }
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="socialJustice" className="text-right text-xs">
+                Social Justice
+              </Label>
+              <Input
+                id="socialJustice"
+                type="number"
+                className="col-span-3"
+                value={localTargets.socialJustice}
+                onChange={(e) =>
+                  setLocalTargets({
+                    ...localTargets,
+                    socialJustice: e.target.value,
+                  })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSave}>Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    <CardContent>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-secondary">
+              <th className="text-left py-3 px-4 font-semibold">Program</th>
+              <th className="text-center py-3 px-4 font-semibold">Target</th>
+              <th className="text-center py-3 px-4 font-semibold">
+                Completed
+              </th>
+              <th className="text-center py-3 px-4 font-semibold">
+                Progress
+              </th>
+              <th className="text-center py-3 px-4 font-semibold">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {performanceData.map((row) => {
+              const percentage = row.target > 0 ? Math.round((row.completed / row.target) * 100) : 0;
+              const isComplete = percentage >= 100;
+              return (
+                <tr
+                  key={row.category}
+                  className="border-b hover:bg-secondary"
+                >
+                  <td className="py-3 px-4 font-medium">{row.category}</td>
+                  <td className="text-center py-3 px-4">
+                    {row.target}
+                  </td>
+                  <td className="text-center py-3 px-4 font-semibold">
+                    {row.completed}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 bg-secondary rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full ${
+                            isComplete ? "bg-green-500" : "bg-blue-500"
+                          }`}
+                          style={{ width: `${Math.min(percentage, 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-semibold w-8">
+                        {percentage}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="text-center py-3 px-4">
+                    <StatusBadge
+                      status={
+                        isComplete
+                          ? "completed"
+                          : percentage >= 75
+                          ? "active"
+                          : "pending"
+                      }
+                      label={`${percentage}%`}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </CardContent>
+  </Card>
+  );
+};
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -276,6 +625,12 @@ const Dashboard = () => {
         completedThisMonth: data.overview.completedCases || 0,
         recentBeneficiaries: data.overview.recentBeneficiaries || 0,
         urgentCases: data.overview.urgentCases || 0,
+        previousPeriod: data.overview.previousPeriod || {
+          totalBeneficiaries: 0,
+          activeCases: 0,
+          completedCases: 0,
+          urgentCases: 0
+        }
       });
 
       // Set module stats directly from analytics data
@@ -393,6 +748,23 @@ const Dashboard = () => {
     fetchDashboardData();
   }, [dateRange]);
 
+  // Handler for saving targets
+  const handleSaveTargets = (newTargets) => {
+    const formattedTargets = {
+      health: parseInt(newTargets.health) || 0,
+      education: parseInt(newTargets.education) || 0,
+      socialJustice: parseInt(newTargets.socialJustice) || 0,
+    };
+    setTargetInputs(formattedTargets);
+    localStorage.setItem(
+      "performance_targets",
+      JSON.stringify(formattedTargets)
+    );
+    fetchDashboardData();
+    setIsEditingTargets(false);
+    toast.success("Targets updated successfully");
+  };
+
   // Get trend direction
   const getTrendDirection = (value) => {
     if (value > 0)
@@ -410,273 +782,29 @@ const Dashboard = () => {
     };
   };
 
-  // Format number
-  const formatNumber = (num) => {
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + "k";
-    }
-    return num.toString();
-  };
-
-  // Module Card Component with expansion
-  const ModuleCard = ({ title, icon: Icon, stats, color, module }) => {
-    const isExpanded = expandedModules[module];
-    const total = stats.totalCases || stats.totalStudents || 0;
-    
-    const categoryEntries = Object.entries(stats).filter(
-      ([key]) => key !== "totalCases" && key !== "totalStudents"
-    );
-
-    return (
-      <Card
-        className={`border-l-4 shadow-elevated hover:shadow-floating transition-all duration-300 bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card/70 ${
-          color === "health"
-            ? "border-l-red-500"
-            : color === "education"
-            ? "border-l-blue-500"
-            : "border-l-purple-500"
-        }`}
-      >
-        <CardHeader
-          className="pb-3 cursor-pointer hover:bg-secondary/30 transition-colors rounded-t-lg"
-          onClick={() => toggleModuleExpanded(module)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className={`p-3 rounded-xl shadow-md ${
-                  color === "health"
-                    ? "bg-red-900/40 text-red-400"
-                    : color === "education"
-                    ? "bg-blue-900/40 text-blue-400"
-                    : "bg-purple-900/40 text-purple-400"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-                <CardDescription className="text-xs mt-1">
-                  {categoryEntries.length} categories
-                </CardDescription>
-              </div>
-            </div>
-            <div className="text-right flex flex-col items-end">
-              <p className="text-3xl font-bold text-foreground">{total}</p>
-              <p className="text-xs text-muted-foreground">Total Cases</p>
-            </div>
-          </div>
-        </CardHeader>
-
-        {isExpanded && (
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-2 gap-3 mt-2">
-              {categoryEntries.map(([key, value]) => (
-                <div
-                  key={key}
-                  className={`p-3 rounded-lg border ${
-                    color === "health"
-                      ? "border-red-500/30 bg-red-500/10"
-                      : color === "education"
-                      ? "border-blue-500/30 bg-blue-500/10"
-                      : "border-purple-500/30 bg-purple-500/10"
-                  }`}
-                >
-                  <p className="text-xs font-medium text-foreground capitalize">
-                    {key.replace(/([A-Z])/g, " $1").trim()}
-                  </p>
-                  <p className="text-xl font-bold text-foreground">{value}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        )}
-      </Card>
-    );
-  };
-
-  // KPI Card Component
-  const KPICard = ({
-    title,
-    value,
-    icon: Icon,
-    trend,
-    trendValue,
-    bgColor,
-  }) => (
-    <Card className="shadow-elevated hover:shadow-floating transition-all duration-300 border border-border bg-gradient-to-br from-card to-card/50 hover:from-card hover:to-card/70">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{title}</p>
-            <p className="text-4xl font-bold text-foreground mt-2 leading-tight">
-              {formatNumber(value)}
-            </p>
-            {trend && (
-              <div className="flex items-center mt-3 pt-3 border-t border-border">
-                {trend === "up" ? (
-                  <ArrowUpRight className="h-4 w-4 text-green-400 mr-1" />
-                ) : (
-                  <ArrowDownRight className="h-4 w-4 text-red-400 mr-1" />
-                )}
-                <span
-                  className={`text-sm font-semibold ${
-                    trend === "up" ? "text-green-400" : "text-red-400"
-                  }`}
-                >
-                  {trendValue}%
-                </span>
-                <span className="text-sm text-muted-foreground ml-2">
-                  from last month
-                </span>
-              </div>
-            )}
-          </div>
-          <div className={`p-4 rounded-xl ${bgColor} shadow-lg`}>
-            <Icon className="h-7 w-7 text-white" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  // Status Badge Component
-  const StatusBadge = ({ status, label }) => {
-    const statusConfig = {
-      active: {
-        bg: "bg-green-900/30",
-        text: "text-green-400",
-        icon: "✓",
-      },
-      pending: {
-        bg: "bg-orange-900/30",
-        text: "text-orange-400",
-        icon: "⏱",
-      },
-      completed: {
-        bg: "bg-blue-900/30",
-        text: "text-blue-400",
-        icon: "✓",
-      },
-      urgent: {
-        bg: "bg-red-900/30",
-        text: "text-red-400",
-        icon: "!",
-      },
+  const getDynamicTrend = (current, previous) => {
+    if (previous === 0 && current === 0) return null;
+    if (previous === 0) return { direction: 'up', value: 100 };
+    const change = ((current - previous) / previous) * 100;
+    return {
+      direction: change >= 0 ? 'up' : 'down',
+      value: Math.abs(Math.round(change))
     };
-    const config = statusConfig[status] || statusConfig.active;
-    return (
-      <Badge className={`${config.bg} ${config.text} border-0`}>
-        {label || status.toUpperCase()}
-      </Badge>
-    );
   };
 
-  // Performance Table Component
-  const PerformanceTable = () => (
-    <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            Performance Overview
-          </div>
-          <Button
-            variant={isEditingTargets ? "default" : "outline"}
-            size="sm"
-            onClick={() => {
-              if (isEditingTargets) {
-                // Save
-                localStorage.setItem("performance_targets", JSON.stringify(targetInputs));
-                fetchDashboardData();
-              }
-              setIsEditingTargets(!isEditingTargets);
-            }}
-          >
-            {isEditingTargets ? "Save Targets" : "Edit Targets"}
-          </Button>
-        </CardTitle>
-        <CardDescription>
-          Target vs. Completed across key programs
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-secondary">
-                <th className="text-left py-3 px-4 font-semibold">Program</th>
-                <th className="text-center py-3 px-4 font-semibold">Target</th>
-                <th className="text-center py-3 px-4 font-semibold">
-                  Completed
-                </th>
-                <th className="text-center py-3 px-4 font-semibold">
-                  Progress
-                </th>
-                <th className="text-center py-3 px-4 font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {performanceData.map((row) => {
-                const percentage = row.target > 0 ? Math.round((row.completed / row.target) * 100) : 0;
-                const isComplete = percentage >= 100;
-                return (
-                  <tr
-                    key={row.category}
-                    className="border-b hover:bg-secondary"
-                  >
-                    <td className="py-3 px-4 font-medium">{row.category}</td>
-                    <td className="text-center py-3 px-4">
-                      {isEditingTargets ? (
-                        <Input
-                          type="number"
-                          className="w-20 h-8 text-center mx-auto"
-                          value={targetInputs[row.id] || ""}
-                          onChange={(e) => setTargetInputs({ ...targetInputs, [row.id]: parseInt(e.target.value) || 0 })}
-                        />
-                      ) : (
-                        row.target
-                      )}
-                    </td>
-                    <td className="text-center py-3 px-4 font-semibold">
-                      {row.completed}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 bg-secondary rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full ${
-                              isComplete ? "bg-green-500" : "bg-blue-500"
-                            }`}
-                            style={{ width: `${Math.min(percentage, 100)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-semibold w-8">
-                          {percentage}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="text-center py-3 px-4">
-                      <StatusBadge
-                        status={
-                          isComplete
-                            ? "completed"
-                            : percentage >= 75
-                            ? "active"
-                            : "pending"
-                        }
-                        label={`${percentage}%`}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
-  );
+  const trendLabel = dateRange === "last_7_days" ? "from last 7 days" 
+                   : dateRange === "last_30_days" ? "from last 30 days" 
+                   : dateRange === "last_90_days" ? "from last 90 days" 
+                   : dateRange === "last_year" ? "from previous year"
+                   : dateRange === "today" ? "from yesterday"
+                   : dateRange === "this_month" ? "from last month"
+                   : dateRange === "last_month" ? "from month prior"
+                   : "from previous period";
+
+  const totalBeneficiariesTrend = getDynamicTrend(overviewStats.totalBeneficiaries, overviewStats.previousPeriod?.totalBeneficiaries);
+  const activeCasesTrend = getDynamicTrend(overviewStats.activeCases, overviewStats.previousPeriod?.activeCases);
+  const completedCasesTrend = getDynamicTrend(overviewStats.completedThisMonth, overviewStats.previousPeriod?.completedCases);
+  const urgentCasesTrend = getDynamicTrend(overviewStats.urgentCases, overviewStats.previousPeriod?.urgentCases);
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -760,32 +888,36 @@ const Dashboard = () => {
                 title="Total Beneficiaries"
                 value={overviewStats.totalBeneficiaries}
                 icon={Users}
-                trend="up"
-                trendValue="12"
+                trend={totalBeneficiariesTrend ? totalBeneficiariesTrend.direction : undefined}
+                trendValue={totalBeneficiariesTrend ? totalBeneficiariesTrend.value : undefined}
+                trendLabel={trendLabel}
                 bgColor="bg-orange-500"
               />
               <KPICard
                 title="Active Cases"
                 value={overviewStats.activeCases}
                 icon={Activity}
-                trend="up"
-                trendValue="8"
+                trend={activeCasesTrend ? activeCasesTrend.direction : undefined}
+                trendValue={activeCasesTrend ? activeCasesTrend.value : undefined}
+                trendLabel={trendLabel}
                 bgColor="bg-green-500"
               />
               <KPICard
                 title="Completed Cases"
                 value={overviewStats.completedThisMonth}
                 icon={CheckCircle}
-                trend="up"
-                trendValue="15"
+                trend={completedCasesTrend ? completedCasesTrend.direction : undefined}
+                trendValue={completedCasesTrend ? completedCasesTrend.value : undefined}
+                trendLabel={trendLabel}
                 bgColor="bg-purple-500"
               />
               <KPICard
                 title="Urgent Cases"
                 value={overviewStats.urgentCases}
                 icon={AlertTriangle}
-                trend="down"
-                trendValue="5"
+                trend={urgentCasesTrend ? urgentCasesTrend.direction : undefined}
+                trendValue={urgentCasesTrend ? urgentCasesTrend.value : undefined}
+                trendLabel={trendLabel}
                 bgColor="bg-red-500"
               />
             </div>
@@ -823,6 +955,8 @@ const Dashboard = () => {
                   stats={moduleStats.health}
                   color="health"
                   module="health"
+                  isExpanded={expandedModules.health}
+                  onToggle={toggleModuleExpanded}
                 />
                 <ModuleCard
                   title="Education Programs"
@@ -830,6 +964,8 @@ const Dashboard = () => {
                   stats={moduleStats.education}
                   color="education"
                   module="education"
+                  isExpanded={expandedModules.education}
+                  onToggle={toggleModuleExpanded}
                 />
                 <ModuleCard
                   title="Social Justice"
@@ -837,12 +973,20 @@ const Dashboard = () => {
                   stats={moduleStats.socialJustice}
                   color="socialJustice"
                   module="socialJustice"
+                  isExpanded={expandedModules.socialJustice}
+                  onToggle={toggleModuleExpanded}
                 />
               </div>
             </div>
 
             {/* Performance Table */}
-            <PerformanceTable />
+            <PerformanceTable
+              performanceData={performanceData}
+              isEditingTargets={isEditingTargets}
+              setIsEditingTargets={setIsEditingTargets}
+              targetInputs={targetInputs}
+              onSaveTargets={handleSaveTargets}
+            />
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -975,19 +1119,60 @@ const Dashboard = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={200}>
+                  <ResponsiveContainer width="100%" height={250}>
                     <BarChart
                       data={chartData.ageDistribution}
-                      layout="vertical"
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis type="category" dataKey="name" width={60} />
-                      <Tooltip />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="rgba(226, 232, 240, 0.3)"
+                      />
+                      <XAxis
+                        dataKey="name"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 10, fill: "currentColor" }}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 10, fill: "currentColor" }}
+                      />
+                      <Tooltip
+                        cursor={{ fill: "rgba(226, 232, 240, 0.1)" }}
+                        contentStyle={{
+                          backgroundColor: "#fff",
+                          border: `1px solid ${COLORS.lightGray}`,
+                          borderRadius: "8px",
+                          fontSize: "12px",
+                        }}
+                      />
+                      <Legend
+                        iconType="circle"
+                        wrapperStyle={{ fontSize: "10px", paddingTop: "10px" }}
+                      />
                       <Bar
-                        dataKey="value"
-                        fill={COLORS.secondary}
-                        radius={[0, 4, 4, 0]}
+                        dataKey="health"
+                        name="Health"
+                        fill={COLORS.health}
+                        radius={[4, 4, 0, 0]}
+                        barSize={15}
+                      />
+                      <Bar
+                        dataKey="education"
+                        name="Education"
+                        fill={COLORS.education}
+                        radius={[4, 4, 0, 0]}
+                        barSize={15}
+                      />
+                      <Bar
+                        dataKey="socialJustice"
+                        name="Social Justice"
+                        fill={COLORS.socialJustice}
+                        radius={[4, 4, 0, 0]}
+                        barSize={15}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -1227,3 +1412,6 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+
+

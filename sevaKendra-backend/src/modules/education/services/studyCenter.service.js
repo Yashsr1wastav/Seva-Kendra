@@ -43,6 +43,8 @@ class StudyCenterService {
       StudyCenter.find(filter)
         .populate("createdBy", "firstName lastName")
         .populate("updatedBy", "firstName lastName")
+        .populate("groupLeader", "firstName lastName phoneNumber")
+        .populate("teachers", "firstName lastName phoneNumber")
         .sort(sortOptions)
         .skip(skip)
         .limit(limitNum)
@@ -65,7 +67,9 @@ class StudyCenterService {
   async getStudyCenterById(id) {
     const studyCenter = await StudyCenter.findById(id)
       .populate("createdBy", "firstName lastName")
-      .populate("updatedBy", "firstName lastName");
+      .populate("updatedBy", "firstName lastName")
+      .populate("groupLeader", "firstName lastName phoneNumber")
+      .populate("teachers", "firstName lastName phoneNumber");
 
     if (!studyCenter) {
       throw new APIError("Study center not found", 404);

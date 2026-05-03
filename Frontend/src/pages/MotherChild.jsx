@@ -62,6 +62,7 @@ import {
 import { motherChildAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const MotherChild = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -336,6 +337,17 @@ const MotherChild = () => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto p-6">
+          <GuidelinesCard
+            title="Mother & Child Care Guidelines"
+            description="Ensure comprehensive tracking of health indicators for both mother and child."
+            items={[
+              "Capture accurate antenatal (ANC) and postnatal (PNC) care visit details.",
+              "Track immunization schedules for both mother (TT) and child.",
+              "Monitor nutritional status and growth milestones of the child.",
+              "Document linkage with ICDS (Anganwadi) and government health schemes.",
+              "Ensure delivery details include location (Institutional/Home) and certificate status.",
+            ]}
+          />
           {/* Filters */}
           <Card className="mb-6">
             <CardHeader>
@@ -708,14 +720,13 @@ const MotherChild = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="contactNo">Contact Number *</Label>
+                <Label htmlFor="contactNo">Contact Number</Label>
                 <Input
                   id="contactNo"
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleInputChange}
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -1126,14 +1137,13 @@ const MotherChild = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="editContactNo">Contact Number *</Label>
+                <Label htmlFor="editContactNo">Contact Number</Label>
                 <Input
                   id="editContactNo"
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleInputChange}
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -1560,3 +1570,6 @@ const MotherChild = () => {
 };
 
 export default MotherChild;
+
+
+

@@ -56,7 +56,7 @@ const dropoutSchema = new mongoose.Schema(
     },
     contactNo: {
       type: String,
-      required: [true, "Contact number is required"],
+      
       trim: true,
       match: [/^[6-9]\d{9}$/, "Please enter a valid mobile number"],
     },
@@ -138,9 +138,8 @@ const dropoutSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    careerCounselling: {
-      type: String,
-      trim: true,
+    dateOfCareerCounselling: {
+      type: Date,
     },
     counselingReport: {
       type: String,

@@ -63,6 +63,7 @@ import { adolescentsAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import AddFollowUpButton from "../components/AddFollowUpButton";
 import usePermissions from "../hooks/usePermissions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const Adolescents = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -342,6 +343,17 @@ const Adolescents = () => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto p-6">
+          <GuidelinesCard
+            title="Adolescent Data Guidelines"
+            description="Focus on capturing holistic development data for adolescents."
+            items={[
+              "Capture detailed profile information including age and gender.",
+              "Track participation in various awareness sessions and workshops.",
+              "Document individual health or education counseling provided.",
+              "Monitor progress and changes in social or educational status.",
+              "Ensure privacy and confidentiality of sensitive information.",
+            ]}
+          />
           {/* Filters */}
           <Card className="mb-6">
             <CardHeader>
@@ -686,14 +698,13 @@ const Adolescents = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="contactNo">Contact Number *</Label>
+                <Label htmlFor="contactNo">Contact Number</Label>
                 <Input
                   id="contactNo"
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleInputChange}
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -2026,3 +2037,6 @@ const Adolescents = () => {
 };
 
 export default Adolescents;
+
+
+

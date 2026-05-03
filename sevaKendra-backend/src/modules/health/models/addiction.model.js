@@ -48,7 +48,6 @@ const addictionSchema = new mongoose.Schema(
     },
     contactNo: {
       type: String,
-      required: [true, "Contact number is required"],
       trim: true,
       match: [/^[6-9]\d{9}$/, "Please enter a valid mobile number"],
     },
@@ -60,7 +59,6 @@ const addictionSchema = new mongoose.Schema(
     // HH Details
     householdCode: {
       type: String,
-      required: [true, "Household code is required"],
       trim: true,
     },
     headOfHousehold: {

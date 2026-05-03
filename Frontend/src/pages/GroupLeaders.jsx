@@ -51,6 +51,7 @@ import { Plus, Search, Edit, Trash2, Eye, Menu } from "lucide-react";
 import { groupLeaderAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const GroupLeaders = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -79,6 +80,7 @@ const GroupLeaders = () => {
     qualifications: "",
     status: "Active",
   });
+  const [stats, setStats] = useState({ total: 0, active: 0, inactive: 0, onLeave: 0 });
 
   const getExperienceYears = (leader) => {
     if (typeof leader?.experience === "number") {
@@ -127,6 +129,26 @@ const GroupLeaders = () => {
   useEffect(() => {
     fetchGroupLeaders();
   }, [pagination.page, pagination.limit, searchTerm]);
+
+  const fetchStats = async () => {
+    try {
+      const res = await groupLeaderAPI.getStats();
+      const statsData = res.data.data;
+      const byStatus = statsData.byStatus || [];
+      setStats({
+        total: statsData.total || 0,
+        active: byStatus.find(s => s._id === "Active")?.count || 0,
+        inactive: byStatus.find(s => s._id === "Inactive")?.count || 0,
+        onLeave: byStatus.find(s => s._id === "On Leave")?.count || 0,
+      });
+    } catch (err) {
+      console.error("Failed to fetch group leader stats", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -256,6 +278,18 @@ const GroupLeaders = () => {
 
         {/* Content Area */}
         <div className="p-6 space-y-6">
+          <GuidelinesCard
+            title="Group Leader Management Guidelines"
+            description="Maintain accurate records of personnel leading various community groups and initiatives."
+            items={[
+              "Verify contact details (Phone/Email) to ensure seamless communication.",
+              "Document educational qualifications and domain-specific experience accurately.",
+              "Update leader status (Active/Inactive) based on their current engagement.",
+              "Track professional development and certifications relevant to their role.",
+              "Ensure each leader is correctly mapped to their respective groups.",
+            ]}
+          />
+
           {/* Controls */}
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1 max-w-md">
@@ -881,3 +915,6 @@ const GroupLeaders = () => {
 };
 
 export default GroupLeaders;
+
+
+

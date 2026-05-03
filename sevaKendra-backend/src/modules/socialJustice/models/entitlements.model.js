@@ -5,16 +5,29 @@ const entitlementsSchema = new mongoose.Schema(
     // Basic Information
     householdCode: {
       type: String,
-      required: [true, "Household code is required"],
       trim: true,
       index: true,
     },
     idCode: {
       type: String,
-      required: [true, "ID code is required"],
       unique: true,
       trim: true,
       index: true,
+    },
+    status: {
+      type: String,
+      enum: [
+        "Applied",
+        "Approved",
+        "Disbursed",
+        "Rejected",
+        "Pending",
+        "In Progress",
+        "Resolved",
+        "Under Verification",
+        "On Hold",
+      ],
+      default: "Applied",
     },
     name: {
       type: String,
@@ -40,7 +53,6 @@ const entitlementsSchema = new mongoose.Schema(
     },
     contactNo: {
       type: String,
-      required: [true, "Contact number is required"],
       match: [/^[6-9]\d{9}$/, "Please enter a valid contact number"],
     },
     wardNo: {
@@ -72,6 +84,10 @@ const entitlementsSchema = new mongoose.Schema(
       required: [true, "Reported by is required"],
       trim: true,
     },
+    applicationDate: {
+      type: Date,
+      index: true,
+    },
 
     // For ID Proof & Domicile Status
     idProofAndDomicile: {
@@ -95,7 +111,17 @@ const entitlementsSchema = new mongoose.Schema(
       },
       status: {
         type: String,
-        enum: ["Pending", "In Progress", "Resolved", "Rejected"],
+        enum: [
+          "Applied",
+          "Approved",
+          "Disbursed",
+          "Rejected",
+          "Pending",
+          "In Progress",
+          "Resolved",
+          "Under Verification",
+          "On Hold",
+        ],
         default: "Pending",
       },
       dateOfReporting: {
@@ -115,7 +141,17 @@ const entitlementsSchema = new mongoose.Schema(
       },
       status: {
         type: String,
-        enum: ["Pending", "In Progress", "Resolved", "Rejected"],
+        enum: [
+          "Applied",
+          "Approved",
+          "Disbursed",
+          "Rejected",
+          "Pending",
+          "In Progress",
+          "Resolved",
+          "Under Verification",
+          "On Hold",
+        ],
         default: "Pending",
       },
     },

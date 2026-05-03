@@ -49,19 +49,23 @@ class EntitlementsService {
       if (filters.wardNo) query.wardNo = filters.wardNo;
       if (filters.habitation)
         query.habitation = new RegExp(filters.habitation, "i");
-      if (filters.idProofType) query.idProofType = filters.idProofType;
-      if (filters.applicationStatus)
-        query.applicationStatus = filters.applicationStatus;
+      if (filters.status) query.status = filters.status;
       if (filters.projectResponsible)
         query.projectResponsible = new RegExp(filters.projectResponsible, "i");
+      if (filters.entitlementType) {
+        query.$or = [
+          { "schemes.eligibleSchemes": new RegExp(filters.entitlementType, "i") },
+          { "idProofAndDomicile.typeOfDocument": new RegExp(filters.entitlementType, "i") }
+        ];
+      }
 
-      // Date range filters
+      // Date range filters (on dateOfReporting since dateOfApplication doesn't exist)
       if (filters.dateFrom || filters.dateTo) {
-        query.dateOfApplication = {};
+        query.dateOfReporting = {};
         if (filters.dateFrom)
-          query.dateOfApplication.$gte = new Date(filters.dateFrom);
+          query.dateOfReporting.$gte = new Date(filters.dateFrom);
         if (filters.dateTo)
-          query.dateOfApplication.$lte = new Date(filters.dateTo);
+          query.dateOfReporting.$lte = new Date(filters.dateTo);
       }
 
       // Apply search
@@ -69,17 +73,24 @@ class EntitlementsService {
         const searchRegex = new RegExp(search, "i");
         const searchQuery = {
           $or: [
-            { beneficiaryName: searchRegex },
-            { fatherName: searchRegex },
-            { motherName: searchRegex },
+            { name: searchRegex },
+            { headOfHousehold: searchRegex },
             { habitation: searchRegex },
             { contactNo: searchRegex },
-            { idProofNumber: searchRegex },
+            { idCode: searchRegex },
+            { householdCode: searchRegex },
             { projectResponsible: searchRegex },
             { remarks: searchRegex },
+            { "schemes.eligibleSchemes": searchRegex },
+            { "idProofAndDomicile.typeOfDocument": searchRegex }
           ],
         };
-        query = { ...query, ...searchQuery };
+        // Merge with existing $or if any
+        if (query.$or) {
+          query = { $and: [query, searchQuery] };
+        } else {
+          query = { ...query, ...searchQuery };
+        }
       }
 
       // Execute query with pagination
@@ -234,11 +245,11 @@ class EntitlementsService {
    * @param {String} applicationStatus - Application status
    * @returns {Promise<Array>} Entitlements records for the status
    */
-  async getEntitlementsByStatus(applicationStatus) {
+  async getEntitlementsByStatus(status) {
     try {
-      return await Entitlements.find({ applicationStatus })
+      return await Entitlements.find({ status })
         .populate("createdBy", "name")
-        .sort({ dateOfApplication: -1 });
+        .sort({ dateOfReporting: -1 });
     } catch (error) {
       throw new APIError(
         500,

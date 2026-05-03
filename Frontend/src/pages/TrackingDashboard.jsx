@@ -4,6 +4,7 @@ import {
   Filter,
   Search,
   AlertCircle,
+  Activity,
   Clock,
   CheckCircle2,
   XCircle,
@@ -169,7 +170,7 @@ const TrackingDashboard = () => {
       const response = await trackingAPI.getAll({
         sort: "-followUpDate",
         populate: "createdBy assignedTo",
-        limit: 100, // Increase limit to show more records
+        limit: 500, // Increased limit to show more records
       });
       console.log("Tracking API Response:", response);
       console.log("Response data:", response.data);
@@ -188,7 +189,9 @@ const TrackingDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await trackingAPI.getStats();
+      // Pass moduleFilter to stats API if we want global stats for that module
+      const params = moduleFilter !== "all" ? { module: moduleFilter } : {};
+      const response = await trackingAPI.getStats(params);
       console.log("Stats API Response:", response);
       console.log("Stats data:", response.data);
       const statsData = response.data.data || response.data || {};
@@ -219,17 +222,31 @@ const TrackingDashboard = () => {
 
     // Status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter((record) => record.status === statusFilter);
+      filtered = filtered.filter(
+        (record) =>
+          record.status?.toLowerCase() === statusFilter.toLowerCase()
+      );
     }
 
     // Priority filter
     if (priorityFilter !== "all") {
       filtered = filtered.filter(
-        (record) => record.priority === priorityFilter
+        (record) =>
+          record.priority?.toLowerCase() === priorityFilter.toLowerCase()
       );
     }
 
     setFilteredRecords(filtered);
+
+    // Calculate stats from the filtered records
+    // We use case-insensitive matching here too
+    const newStats = {
+      total: filtered.length,
+      overdue: filtered.filter((r) => isOverdue(r)).length,
+      inProgress: filtered.filter((r) => r.status?.toLowerCase() === "in progress").length,
+      completedThisMonth: filtered.filter((r) => r.status?.toLowerCase() === "completed").length,
+    };
+    setStats(newStats);
   };
 
   const handleView = (record) => {
@@ -438,16 +455,17 @@ const TrackingDashboard = () => {
   };
 
   const getStatusBadgeVariant = (status) => {
-    switch (status) {
-      case "Completed":
-        return "default";
-      case "In Progress":
-        return "secondary";
-      case "Pending":
-        return "outline";
-      case "Cancelled":
+    const s = status?.toLowerCase();
+    switch (s) {
+      case "completed":
+        return "success";
+      case "in progress":
+        return "info";
+      case "pending":
+        return "warning";
+      case "cancelled":
         return "destructive";
-      case "On Hold":
+      case "on hold":
         return "secondary";
       default:
         return "outline";
@@ -470,14 +488,17 @@ const TrackingDashboard = () => {
   };
 
   const getStatusIcon = (status) => {
-    switch (status) {
-      case "Completed":
+    const s = status?.toLowerCase();
+    switch (s) {
+      case "completed":
         return <CheckCircle2 className="h-4 w-4" />;
-      case "In Progress":
+      case "in progress":
+        return <Activity className="h-4 w-4" />;
+      case "pending":
         return <Clock className="h-4 w-4" />;
-      case "Cancelled":
+      case "cancelled":
         return <XCircle className="h-4 w-4" />;
-      case "On Hold":
+      case "on hold":
         return <Pause className="h-4 w-4" />;
       default:
         return <AlertCircle className="h-4 w-4" />;
@@ -490,7 +511,7 @@ const TrackingDashboard = () => {
   };
 
   const isOverdue = (record) => {
-    if (!record.followUpDate || record.status === "Completed") return false;
+    if (!record.followUpDate || record.status?.toLowerCase() === "completed") return false;
     return new Date(record.followUpDate) < new Date();
   };
 
@@ -517,7 +538,12 @@ const TrackingDashboard = () => {
           {/* Header */}
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold">Tracking Dashboard</h1>
+              <h1 className="text-3xl font-bold">
+                Tracking Dashboard
+                <span className="ml-2 text-lg font-semibold text-muted-foreground align-middle">
+                  ({filteredRecords.length})
+                </span>
+              </h1>
               <p className="text-muted-foreground">
                 Monitor and manage follow-ups across all modules
               </p>
@@ -700,7 +726,7 @@ const TrackingDashboard = () => {
                         key={record._id}
                         className={`transition-colors duration-150 ${
                           isOverdue(record)
-                            ? "bg-red-50"
+                            ? "bg-destructive/10 hover:bg-destructive/20"
                             : "hover:bg-secondary/50"
                         }`}
                       >
@@ -1311,3 +1337,6 @@ const TrackingDashboard = () => {
 };
 
 export default TrackingDashboard;
+
+
+

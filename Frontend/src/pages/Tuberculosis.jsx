@@ -52,6 +52,7 @@ import {
 import { tuberculosisAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const Tuberculosis = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -288,6 +289,17 @@ const Tuberculosis = () => {
         </header>
 
         <main className="flex-1 overflow-auto p-6">
+          <GuidelinesCard
+            title="Tuberculosis Tracking Guidelines"
+            description="Accurate TB records help in monitoring treatment adherence and preventing spread."
+            items={[
+              "Ensure TB unit details and treatment start dates are accurate.",
+              "Monitor medication adherence and regular sputum test results.",
+              "Record nutritional support and government benefits received.",
+              "Track family screening status to prevent further spread.",
+              "Update treatment outcomes (Cured, Treatment Completed, etc.) promptly.",
+            ]}
+          />
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -654,14 +666,13 @@ const Tuberculosis = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="contactNo">Contact Number *</Label>
+                <Label htmlFor="contactNo">Contact Number</Label>
                 <Input
                   id="contactNo"
                   name="contactNo"
                   value={formData.contactNo}
                   onChange={handleInputChange}
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -1103,3 +1114,6 @@ const Tuberculosis = () => {
 };
 
 export default Tuberculosis;
+
+
+

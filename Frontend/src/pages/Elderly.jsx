@@ -79,6 +79,7 @@ import { elderlyAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -402,6 +403,17 @@ const Elderly = () => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto p-6">
+          <GuidelinesCard
+            title="Elderly Support Guidelines"
+            description="Provide dignified care and track essential health and social parameters for seniors."
+            items={[
+              "Ensure accurate capture of age (60+) and unique identification numbers.",
+              "Document specific health issues and regular medical screening results.",
+              "Track bank account availability for pension and benefit linkages.",
+              "Monitor social support systems and psychological well-being assessments.",
+              "Update individual care plans based on latest follow-up visits.",
+            ]}
+          />
           {/* Filters */}
           <Card className="mb-6">
             <CardHeader>
@@ -752,7 +764,7 @@ const Elderly = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="contactNo">Contact Number *</Label>
+                <Label htmlFor="contactNo">Contact Number</Label>
                 <Input
                   id="contactNo"
                   name="contactNo"
@@ -760,7 +772,6 @@ const Elderly = () => {
                   onChange={handleInputChange}
                   placeholder="10-digit mobile number"
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -1027,7 +1038,7 @@ const Elderly = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="edit-contactNo">Contact Number *</Label>
+                <Label htmlFor="edit-contactNo">Contact Number</Label>
                 <Input
                   id="edit-contactNo"
                   name="contactNo"
@@ -1035,7 +1046,6 @@ const Elderly = () => {
                   onChange={handleInputChange}
                   placeholder="10-digit mobile number"
                   pattern="[6-9][0-9]{9}"
-                  required
                 />
               </div>
               <div>
@@ -1392,3 +1402,6 @@ const Elderly = () => {
 };
 
 export default Elderly;
+
+
+

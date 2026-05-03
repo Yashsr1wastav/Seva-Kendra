@@ -42,7 +42,7 @@ const hivSchema = new mongoose.Schema(
     },
     contactNo: {
       type: String,
-      required: [true, "Contact number is required"],
+      
       trim: true,
       match: [/^[6-9]\d{9}$/, "Please enter a valid mobile number"],
     },

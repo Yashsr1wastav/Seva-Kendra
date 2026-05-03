@@ -78,6 +78,7 @@ import { dropoutAPI, scStudentAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -192,7 +193,7 @@ const Dropouts = () => {
     },
     dateOfEducationalAssessment: "",
     educationalScreeningResults: "",
-    careerCounselling: "",
+    dateOfCareerCounselling: "",
     counselingReport: "",
     individualCarePlan: "",
     enrollmentStatus: "Pending",
@@ -349,7 +350,7 @@ const Dropouts = () => {
       },
       dateOfEducationalAssessment: "",
       educationalScreeningResults: "",
-      careerCounselling: "",
+      dateOfCareerCounselling: "",
       counselingReport: "",
       individualCarePlan: "",
       enrollmentStatus: "Pending",
@@ -380,6 +381,9 @@ const Dropouts = () => {
         ? new Date(dropout.dateOfEducationalAssessment)
             .toISOString()
             .split("T")[0]
+        : "",
+      dateOfCareerCounselling: dropout.dateOfCareerCounselling
+        ? new Date(dropout.dateOfCareerCounselling).toISOString().split("T")[0]
         : "",
       dateOfReAdmission: dropout.dateOfReAdmission
         ? new Date(dropout.dateOfReAdmission).toISOString().split("T")[0]
@@ -438,6 +442,18 @@ const Dropouts = () => {
                 </Button>
               )}
             </div>
+
+            <GuidelinesCard
+              title="Dropout Re-enrollment Guidelines"
+              description="Support students who have left school in returning to their education."
+              items={[
+                "Identify the specific reason for dropout (Financial, Health, Social, etc.).",
+                "Verify availability of critical documents like Transfer Certificates (TC).",
+                "Track current re-admission status and new school details.",
+                "Document counseling provided to both students and parents.",
+                "Monitor re-enrolled students' attendance and adjustment progress.",
+              ]}
+            />
 
             {/* Search and Filters */}
             <Card className="shadow-md hover:shadow-lg transition-shadow duration-300">
@@ -955,6 +971,66 @@ const Dropouts = () => {
                         }
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="dateOfEducationalAssessment">
+                        Date of Educational Assessment
+                      </Label>
+                      <Input
+                        id="dateOfEducationalAssessment"
+                        type="date"
+                        value={formData.dateOfEducationalAssessment}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            dateOfEducationalAssessment: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="educationalScreeningResults">
+                        Educational Screening Results
+                      </Label>
+                      <Input
+                        id="educationalScreeningResults"
+                        value={formData.educationalScreeningResults}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            educationalScreeningResults: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dateOfCareerCounselling">
+                        Date of Career Counselling
+                      </Label>
+                      <Input
+                        id="dateOfCareerCounselling"
+                        type="date"
+                        value={formData.dateOfCareerCounselling}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            dateOfCareerCounselling: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="counselingReport">Counseling Report</Label>
+                      <Input
+                        id="counselingReport"
+                        value={formData.counselingReport}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            counselingReport: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
 
                   <DialogFooter>
@@ -1306,6 +1382,68 @@ const Dropouts = () => {
                         }
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="editDateOfEducationalAssessment">
+                        Date of Educational Assessment
+                      </Label>
+                      <Input
+                        id="editDateOfEducationalAssessment"
+                        type="date"
+                        value={formData.dateOfEducationalAssessment}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            dateOfEducationalAssessment: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editEducationalScreeningResults">
+                        Educational Screening Results
+                      </Label>
+                      <Input
+                        id="editEducationalScreeningResults"
+                        value={formData.educationalScreeningResults}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            educationalScreeningResults: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editDateOfCareerCounselling">
+                        Date of Career Counselling
+                      </Label>
+                      <Input
+                        id="editDateOfCareerCounselling"
+                        type="date"
+                        value={formData.dateOfCareerCounselling}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            dateOfCareerCounselling: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="editCounselingReport">
+                        Counseling Report
+                      </Label>
+                      <Input
+                        id="editCounselingReport"
+                        value={formData.counselingReport}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            counselingReport: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
                   </div>
 
                   <DialogFooter>
@@ -1564,9 +1702,15 @@ const Dropouts = () => {
                         </div>
                         <div>
                           <Label className="font-semibold">
-                            Career Counselling
+                            Date of Career Counselling
                           </Label>
-                          <p>{selectedDropout.careerCounselling || "N/A"}</p>
+                          <p>
+                            {selectedDropout.dateOfCareerCounselling
+                              ? new Date(
+                                  selectedDropout.dateOfCareerCounselling
+                                ).toLocaleDateString()
+                              : "N/A"}
+                          </p>
                         </div>
                       </div>
                       {selectedDropout.educationalScreeningResults && (
@@ -1601,49 +1745,6 @@ const Dropouts = () => {
                       )}
                     </div>
 
-                    {/* Re-Admission Details */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold border-b pb-2">
-                        Re-Admission Details
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label className="font-semibold">
-                            Enrollment Status
-                          </Label>
-                          <Badge>{selectedDropout.enrollmentStatus}</Badge>
-                        </div>
-                        <div>
-                          <Label className="font-semibold">
-                            Date of Re-Admission
-                          </Label>
-                          <p>
-                            {selectedDropout.dateOfReAdmission
-                              ? new Date(
-                                  selectedDropout.dateOfReAdmission
-                                ).toLocaleDateString()
-                              : "N/A"}
-                          </p>
-                        </div>
-                        <div>
-                          <Label className="font-semibold">
-                            Education Level When Re-Admission
-                          </Label>
-                          <p>
-                            {selectedDropout.educationLevelWhenReAdmission ||
-                              "N/A"}
-                          </p>
-                        </div>
-                        <div>
-                          <Label className="font-semibold">
-                            School Name When Re-Admission
-                          </Label>
-                          <p>
-                            {selectedDropout.schoolNameWhenReAdmission || "N/A"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
                   </div>
                 )}
                 <DialogFooter>
@@ -1661,3 +1762,6 @@ const Dropouts = () => {
 };
 
 export default Dropouts;
+
+
+

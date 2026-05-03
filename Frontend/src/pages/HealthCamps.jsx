@@ -62,6 +62,7 @@ import {
 import { healthCampAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const HealthCamps = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -295,6 +296,17 @@ const HealthCamps = () => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto p-6">
+          <GuidelinesCard
+            title="Health Camp Guidelines"
+            description="Follow these steps to ensure accurate recording of health camp data."
+            items={[
+              "Use accurate dates and target group categories.",
+              "Ensure the ward and habitation details are correctly specified.",
+              "Record the total number of beneficiaries for accurate reporting.",
+              "Document major medical findings and specialisations involved.",
+              "Set follow-up dates for critical cases identified during the camp.",
+            ]}
+          />
           {/* Filters */}
           <Card className="mb-6">
             <CardHeader>
@@ -1237,3 +1249,6 @@ const HealthCamps = () => {
 };
 
 export default HealthCamps;
+
+
+

@@ -44,6 +44,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { beneficiaryAPI } from "../services/api";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 export default function Beneficiaries() {
   const [beneficiaries, setBeneficiaries] = useState([]);
@@ -423,6 +424,18 @@ export default function Beneficiaries() {
         </Button>
       </div>
 
+      <GuidelinesCard
+        title="Beneficiary Data Entry Guidelines"
+        description="Ensure all beneficiary records are complete and accurate to maintain data quality."
+        items={[
+          "Create unique ID codes for each new beneficiary.",
+          "Capture primary contact details and detailed address.",
+          "Map beneficiaries to their respective wards and habitations.",
+          "Categorize beneficiaries by program (Health, Education, Social Justice).",
+          "Update status regularly to reflect current active participation.",
+        ]}
+      />
+
       {/* Filters */}
       <Card className="mb-6 shadow-md hover:shadow-lg transition-shadow duration-300">
         <CardContent className="pt-6">
@@ -658,3 +671,6 @@ export default function Beneficiaries() {
     </div>
   );
 }
+
+
+

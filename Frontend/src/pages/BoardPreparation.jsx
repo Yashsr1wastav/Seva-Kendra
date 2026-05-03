@@ -77,6 +77,7 @@ import { boardPreparationAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -352,6 +353,18 @@ const BoardPreparation = () => {
                 </Button>
               )}
             </div>
+
+            <GuidelinesCard
+              title="Board Exam Preparation Guidelines"
+              description="Support students in their transition through critical educational milestones."
+              items={[
+                "Specify the education board (WBBSE, CBSE, etc.) and standard correctly.",
+                "Track current preparation status (Preparing, Appeared, Passed).",
+                "Document counseling results and individual career guidance provided.",
+                "Monitor assessment scores and areas needing academic support.",
+                "Capture contact details for regular follow-ups on exam progress.",
+              ]}
+            />
 
             {/* Search and Filters */}
             <Card>
@@ -1305,3 +1318,6 @@ const BoardPreparation = () => {
 };
 
 export default BoardPreparation;
+
+
+

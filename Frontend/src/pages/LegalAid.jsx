@@ -85,6 +85,7 @@ import { legalAidServiceAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
+import GuidelinesCard from "../components/GuidelinesCard";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -446,6 +447,18 @@ const LegalAid = () => {
                 </Button>
               )}
             </div>
+
+            <GuidelinesCard
+              title="Legal Aid Case Guidelines"
+              description="Ensure efficient tracking and resolution of legal assistance cases."
+              items={[
+                "Categorize cases accurately (Property, Family, Domestic Violence, etc.).",
+                "Set priority levels based on urgency and legal timelines.",
+                "Maintain clear records of action plans and latest case status.",
+                "Track follow-up dates to ensure timely legal interventions.",
+                "Document all counseling provided and referrals made to legal experts.",
+              ]}
+            />
 
             {/* Search and Filters */}
             <Card>
@@ -823,7 +836,7 @@ const LegalAid = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="contactNo">Contact Number *</Label>
+                      <Label htmlFor="contactNo">Contact Number</Label>
                       <Input
                         id="contactNo"
                         value={formData.contactNo}
@@ -835,7 +848,6 @@ const LegalAid = () => {
                         }
                         placeholder="Enter contact number"
                         pattern="[6-9][0-9]{9}"
-                        required
                       />
                     </div>
                     <div>
@@ -1253,3 +1265,6 @@ const LegalAid = () => {
 };
 
 export default LegalAid;
+
+
+
