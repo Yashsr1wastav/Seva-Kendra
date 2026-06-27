@@ -84,6 +84,7 @@ import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -527,10 +528,67 @@ const Entitlements = () => {
                 </p>
               </div>
               {canCreate("socialJustice") && (
-                <Button onClick={() => setIsCreateModalOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Entitlement
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ExcelBulkImportButton
+                    label="Import Excel"
+                    description="Use the same field names shown in the form to create entitlement records in bulk."
+                    templateFields={[
+                      { label: "Household Code", key: "householdCode" },
+                      { label: "ID Code", key: "idCode" },
+                      { label: "Beneficiary ID", key: "beneficiaryId" },
+                      { label: "Beneficiary Name", key: "beneficiaryName" },
+                      { label: "Name", key: "name" },
+                      { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                      { label: "Age", key: "age" },
+                      { label: "Head of Household", key: "headOfHousehold" },
+                      { label: "Contact Number", key: "contactNo" },
+                      { label: "Ward Number", key: "wardNo" },
+                      { label: "Habitation", key: "habitation" },
+                      { label: "Project Responsible", key: "projectResponsible" },
+                      { label: "Date of Reporting", key: "dateOfReporting" },
+                      { label: "Reported By", key: "reportedBy" },
+                      { label: "Entitlement Type", key: "entitlementType" },
+                      { label: "Application Date", key: "applicationDate" },
+                      { label: "Document Type", key: "documentation.typeOfDocument", options: ["Aadhar Card", "Voter ID", "Passport", "Driving License", "PAN Card", "Ration Card", "Birth Certificate", "Domicile Certificate", "Other"] },
+                      { label: "Documentation Status", key: "documentation.status", options: ["Applied", "Approved", "Disbursed", "Rejected", "Pending", "In Progress", "Resolved", "Under Verification", "On Hold"] },
+                      { label: "Documentation Nature of Issue", key: "documentation.natureOfIssue" },
+                      { label: "Government Scheme Issue", key: "governmentSchemes.natureOfIssue" },
+                      { label: "Case Status", key: "status", options: ["Applied", "Approved", "Disbursed", "Rejected", "Pending", "In Progress", "Resolved", "Under Verification", "On Hold"] },
+                      { label: "Remarks", key: "remarks" },
+                      { label: "Follow-up Required", key: "followUpRequired" },
+                      { label: "Follow-up Date", key: "followUpDate" },
+                    ]}
+                    sampleRow={{
+                      householdCode: "HH-001",
+                      idCode: "ID-001",
+                      beneficiaryId: "BEN-001",
+                      beneficiaryName: "Lakshmi",
+                      name: "Lakshmi",
+                      gender: "Female",
+                      age: "42",
+                      headOfHousehold: "Lakshmi",
+                      contactNo: "9876543210",
+                      wardNo: "8",
+                      habitation: "East Street",
+                      projectResponsible: "Field Staff",
+                      dateOfReporting: "2026-01-20",
+                      reportedBy: "Volunteer",
+                      entitlementType: "Pension",
+                      applicationDate: "2026-01-21",
+                      documentation: "",
+                      status: "Pending",
+                      remarks: "",
+                      followUpRequired: false,
+                      followUpDate: "",
+                    }}
+                    createRecord={entitlementsAPI.create}
+                    onImported={fetchEntitlements}
+                  />
+                  <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Entitlement
+                  </Button>
+                </div>
               )}
             </div>
 

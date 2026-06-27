@@ -86,6 +86,7 @@ import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -339,10 +340,48 @@ const Workshops = () => {
                 </p>
               </div>
               {canCreate("socialJustice") && (
-                <Button onClick={() => setIsCreateModalOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Workshop
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ExcelBulkImportButton
+                    label="Import Excel"
+                    description="Use the same field names shown in the form to create workshop records in bulk."
+                    templateFields={[
+                      { label: "Group ID", key: "groupId" },
+                      { label: "Group Name", key: "groupName" },
+                      { label: "Group Type", key: "groupType", options: ["CBUCBO", "SHG", "Youth Group", "Women Group", "Community Group", "Farmer Group", "Student Group", "Other"] },
+                      { label: "Ward No", key: "wardNo" },
+                      { label: "Habitation", key: "habitation" },
+                      { label: "Project Responsible", key: "projectResponsible" },
+                      { label: "Topic", key: "topic" },
+                      { label: "Date of Training", key: "dateOfTraining" },
+                      { label: "Resource Person", key: "resourcePerson" },
+                      { label: "Profile of Resource Person", key: "profileOfResourcePerson" },
+                      { label: "Agenda", key: "agenda" },
+                      { label: "Total Participants", key: "totalParticipants" },
+                      { label: "Outcome", key: "outcome" },
+                    ]}
+                    sampleRow={{
+                      groupId: "W-001",
+                      groupName: "Youth Awareness Group",
+                      groupType: "Youth Group",
+                      wardNo: "10",
+                      habitation: "West Block",
+                      projectResponsible: "Coordinator",
+                      topic: "Health Awareness",
+                      dateOfTraining: "2026-03-05",
+                      resourcePerson: "Dr. Kumar",
+                      profileOfResourcePerson: "Public health educator",
+                      agenda: "Session on hygiene and nutrition",
+                      totalParticipants: "28",
+                      outcome: "Participants understood the basics",
+                    }}
+                    createRecord={workshopAndAwarenessAPI.create}
+                    onImported={fetchWorkshops}
+                  />
+                  <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Workshop
+                  </Button>
+                </div>
               )}
             </div>
 

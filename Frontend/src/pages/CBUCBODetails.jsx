@@ -81,6 +81,7 @@ import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -415,10 +416,56 @@ const CBUCBODetails = () => {
                 </p>
               </div>
               {canCreate("socialJustice") && (
-                <Button onClick={() => setIsCreateModalOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add CBUCBO Group
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ExcelBulkImportButton
+                    label="Import Excel"
+                    description="Use the same field names shown in the form to create CBUCBO groups in bulk."
+                    templateFields={[
+                      { label: "Group ID", key: "groupId" },
+                      { label: "Group Name", key: "groupName" },
+                      { label: "Group Type", key: "groupType", options: ["CBUCBO", "SHG", "Youth Group", "Women Group", "Farmer Producer Group", "Other"] },
+                      { label: "Functional Area", key: "functionalArea" },
+                      { label: "Ward No", key: "wardNo" },
+                      { label: "Habitation", key: "habitation" },
+                      { label: "Project Responsible", key: "projectResponsible" },
+                      { label: "Date of Formation", key: "dateOfFormation" },
+                      { label: "Total Members", key: "totalMembers" },
+                      { label: "Group Leader", key: "groupLeader" },
+                      { label: "Contact Number", key: "contactNo" },
+                      { label: "Group Mentor", key: "groupMentor" },
+                      { label: "List of Capacity Building Trainings", key: "listOfCapacityBuildingTrainings" },
+                      { label: "Training Outcomes", key: "trainingOutcomes" },
+                      { label: "Action Plan for Group", key: "actionPlanForGroup" },
+                      { label: "Remarks", key: "remarks" },
+                      { label: "Major Achievements", key: "majorAchievements" },
+                    ]}
+                    sampleRow={{
+                      groupId: "CBU-001",
+                      groupName: "Ward 12 Women Group",
+                      groupType: "Women Group",
+                      functionalArea: "Community Support",
+                      wardNo: "12",
+                      habitation: "Kallar Street",
+                      projectResponsible: "Project Officer A",
+                      dateOfFormation: "2026-01-15",
+                      totalMembers: "25",
+                      groupLeader: "Anita",
+                      contactNo: "9876543210",
+                      groupMentor: "Mentor Name",
+                      listOfCapacityBuildingTrainings: "Leadership, Savings",
+                      trainingOutcomes: "Improved participation",
+                      actionPlanForGroup: "Monthly savings review",
+                      remarks: "",
+                      majorAchievements: "",
+                    }}
+                    createRecord={cbucboDetailsAPI.create}
+                    onImported={fetchCBUCBODetails}
+                  />
+                  <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add CBUCBO Group
+                  </Button>
+                </div>
               )}
             </div>
 

@@ -86,6 +86,7 @@ import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -441,10 +442,60 @@ const LegalAid = () => {
                 </p>
               </div>
               {canCreate("socialJustice") && (
-                <Button onClick={() => setIsCreateModalOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Legal Case
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <ExcelBulkImportButton
+                    label="Import Excel"
+                    description="Use the same field names shown in the form to create legal aid cases in bulk."
+                    templateFields={[
+                      { label: "Household Code", key: "householdCode" },
+                      { label: "Unique ID", key: "uniqueId" },
+                      { label: "Name", key: "name" },
+                      { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                      { label: "Age", key: "age" },
+                      { label: "Contact Number", key: "contactNo" },
+                      { label: "Head of Household", key: "headOfHousehold" },
+                      { label: "Ward Number", key: "wardNo" },
+                      { label: "Habitation", key: "habitation" },
+                      { label: "Project Responsible", key: "projectResponsible" },
+                      { label: "Date of Reporting", key: "dateOfReporting" },
+                      { label: "Reported By", key: "reportedBy" },
+                      { label: "Nature of Issue", key: "natureOfIssue", options: ["Property Dispute", "Family Dispute", "Domestic Violence", "Labor Rights", "Consumer Rights", "Land Rights", "Government Benefits", "Legal Documentation", "Criminal Case", "Civil Case", "Other"] },
+                      { label: "Case Status", key: "status", options: ["Pending", "In Progress", "Resolved", "Closed", "Referred"] },
+                      { label: "Priority", key: "priority", options: ["Low", "Medium", "High", "Urgent"] },
+                      { label: "Action Plan", key: "actionPlan" },
+                      { label: "Remarks", key: "remarks" },
+                      { label: "Follow-up Required", key: "followUpRequired" },
+                      { label: "Follow-up Date", key: "followUpDate" },
+                    ]}
+                    sampleRow={{
+                      householdCode: "HH-002",
+                      uniqueId: "LA-001",
+                      name: "Ravi",
+                      gender: "Male",
+                      age: "36",
+                      contactNo: "9876543210",
+                      headOfHousehold: "Ravi",
+                      wardNo: "5",
+                      habitation: "North Colony",
+                      projectResponsible: "Case Worker",
+                      dateOfReporting: "2026-02-01",
+                      reportedBy: "Volunteer",
+                      natureOfIssue: "Property Dispute",
+                      status: "Pending",
+                      priority: "Medium",
+                      actionPlan: "Collect documents and draft notice",
+                      remarks: "",
+                      followUpRequired: true,
+                      followUpDate: "2026-02-10",
+                    }}
+                    createRecord={legalAidServiceAPI.create}
+                    onImported={fetchLegalAidServices}
+                  />
+                  <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Legal Case
+                  </Button>
+                </div>
               )}
             </div>
 
