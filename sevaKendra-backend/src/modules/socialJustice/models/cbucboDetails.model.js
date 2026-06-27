@@ -165,6 +165,31 @@ cbucboDetailsSchema.virtual("groupAge").get(function () {
   return diffDays;
 });
 
+// Pre-validate hook for case-insensitive enums
+const groupTypeEnum = [
+  "CBUCBO",
+  "SHG",
+  "Youth Group",
+  "Women Group",
+  "Farmer Producer Group",
+  "Other",
+];
+
+const normalizeEnum = (value, enumValues) => {
+  if (typeof value !== "string") return value;
+  const match = enumValues.find(
+    (e) => e.toLowerCase() === value.trim().toLowerCase()
+  );
+  return match || value;
+};
+
+cbucboDetailsSchema.pre("validate", function (next) {
+  if (this.groupType) {
+    this.groupType = normalizeEnum(this.groupType, groupTypeEnum);
+  }
+  next();
+});
+
 // Pre-save middleware for validation
 cbucboDetailsSchema.pre("save", function (next) {
   // Validate contact number format

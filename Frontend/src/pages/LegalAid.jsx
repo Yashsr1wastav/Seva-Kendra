@@ -48,6 +48,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   Scale,
+  FileSpreadsheet,
   Plus,
   Search,
   Filter,
@@ -415,37 +416,53 @@ const LegalAid = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
-        {/* Mobile Header */}
-        <div className="lg:hidden bg-card shadow-sm p-4 flex items-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(true)}
-            className="mr-2"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-semibold">Legal Aid Services</h1>
-        </div>
+        {/* Header */}
+        <header className="bg-background shadow-sm border-b border-border">
+          <div className="flex items-center justify-between px-6 py-4">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="lg:hidden"
+              >
+                <Menu className="h-6 w-6" />
+              </Button>
+              <div className="flex items-center space-x-2">
+                <Scale className="h-6 w-6 text-purple-600" />
+                <h1 className="text-2xl font-bold text-foreground">
+                  Legal Aid Services
+                </h1>
+              </div>
+            </div>
+            {canCreate("socialJustice") && (
+              <Button onClick={() => setIsCreateModalOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Legal Case
+              </Button>
+            )}
+          </div>
+        </header>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto">
           <div className="container mx-auto p-6 space-y-6">
-            {/* Header */}
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground">
-                  Legal Aid Services
-                </h1>
-                <p className="text-muted-foreground">
-                  Manage legal assistance and case tracking for beneficiaries
-                </p>
-              </div>
-              {canCreate("socialJustice") && (
-                <div className="flex flex-wrap items-center gap-2">
+            {/* Bulk Import Card */}
+            {canCreate("socialJustice") && (
+              <Card className="border border-muted bg-card shadow-sm">
+                <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-foreground flex items-center gap-2">
+                      <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                      Bulk Import Legal Aid Cases
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Download the template, fill it in, and upload it to import records in bulk.
+                    </p>
+                  </div>
                   <ExcelBulkImportButton
                     label="Import Excel"
-                    description="Use the same field names shown in the form to create legal aid cases in bulk."
+                    description=""
                     templateFields={[
                       { label: "Household Code", key: "householdCode" },
                       { label: "Unique ID", key: "uniqueId" },
@@ -491,13 +508,9 @@ const LegalAid = () => {
                     createRecord={legalAidServiceAPI.create}
                     onImported={fetchLegalAidServices}
                   />
-                  <Button onClick={() => setIsCreateModalOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Legal Case
-                  </Button>
-                </div>
-              )}
-            </div>
+                </CardContent>
+              </Card>
+            )}
 
             <GuidelinesCard
               title="Legal Aid Case Guidelines"

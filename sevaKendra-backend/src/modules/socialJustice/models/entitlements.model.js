@@ -240,6 +240,68 @@ entitlementsSchema.virtual("ageGroup").get(function () {
   return "Senior";
 });
 
+// Pre-validate hook for case-insensitive enums
+const statusEnum = [
+  "Applied",
+  "Approved",
+  "Disbursed",
+  "Rejected",
+  "Pending",
+  "In Progress",
+  "Resolved",
+  "Under Verification",
+  "On Hold",
+];
+const genderEnum = ["Male", "Female", "Other"];
+const docTypeEnum = [
+  "Aadhar Card",
+  "Voter ID",
+  "Passport",
+  "Driving License",
+  "PAN Card",
+  "Ration Card",
+  "Birth Certificate",
+  "Domicile Certificate",
+  "Other",
+];
+
+const normalizeEnum = (value, enumValues) => {
+  if (typeof value !== "string") return value;
+  const match = enumValues.find(
+    (e) => e.toLowerCase() === value.trim().toLowerCase()
+  );
+  return match || value;
+};
+
+entitlementsSchema.pre("validate", function (next) {
+  if (this.gender) {
+    this.gender = normalizeEnum(this.gender, genderEnum);
+  }
+  if (this.status) {
+    this.status = normalizeEnum(this.status, statusEnum);
+  }
+  if (this.idProofAndDomicile) {
+    if (this.idProofAndDomicile.typeOfDocument) {
+      this.idProofAndDomicile.typeOfDocument = normalizeEnum(
+        this.idProofAndDomicile.typeOfDocument,
+        docTypeEnum
+      );
+    }
+    if (this.idProofAndDomicile.status) {
+      this.idProofAndDomicile.status = normalizeEnum(
+        this.idProofAndDomicile.status,
+        statusEnum
+      );
+    }
+  }
+  if (this.schemes) {
+    if (this.schemes.status) {
+      this.schemes.status = normalizeEnum(this.schemes.status, statusEnum);
+    }
+  }
+  next();
+});
+
 // Pre-save middleware for validation
 entitlementsSchema.pre("save", function (next) {
   // Validate contact number format

@@ -191,6 +191,48 @@ legalAidServiceSchema.virtual("ageGroup").get(function () {
   return "Senior";
 });
 
+// Pre-validate hook for case-insensitive enums
+const genderEnum = ["Male", "Female", "Other"];
+const natureOfIssueEnum = [
+  "Property Dispute",
+  "Family Dispute",
+  "Domestic Violence",
+  "Labor Rights",
+  "Consumer Rights",
+  "Land Rights",
+  "Government Benefits",
+  "Legal Documentation",
+  "Criminal Case",
+  "Civil Case",
+  "Other",
+];
+const statusEnum = ["Pending", "In Progress", "Resolved", "Closed", "Referred"];
+const priorityEnum = ["Low", "Medium", "High", "Urgent"];
+
+const normalizeEnum = (value, enumValues) => {
+  if (typeof value !== "string") return value;
+  const match = enumValues.find(
+    (e) => e.toLowerCase() === value.trim().toLowerCase()
+  );
+  return match || value;
+};
+
+legalAidServiceSchema.pre("validate", function (next) {
+  if (this.gender) {
+    this.gender = normalizeEnum(this.gender, genderEnum);
+  }
+  if (this.natureOfIssue) {
+    this.natureOfIssue = normalizeEnum(this.natureOfIssue, natureOfIssueEnum);
+  }
+  if (this.status) {
+    this.status = normalizeEnum(this.status, statusEnum);
+  }
+  if (this.priority) {
+    this.priority = normalizeEnum(this.priority, priorityEnum);
+  }
+  next();
+});
+
 // Pre-save middleware for validation
 legalAidServiceSchema.pre("save", function (next) {
   // Validate contact number format

@@ -110,6 +110,33 @@ workshopsAwarenessSchema.index({ createdAt: -1 });
 workshopsAwarenessSchema.index({ wardNo: 1, habitation: 1 });
 workshopsAwarenessSchema.index({ dateOfTraining: -1, groupType: 1 });
 
+// Pre-validate hook for case-insensitive enums
+const groupTypeEnum = [
+  "CBUCBO",
+  "SHG",
+  "Youth Group",
+  "Women Group",
+  "Community Group",
+  "Farmer Group",
+  "Student Group",
+  "Other",
+];
+
+const normalizeEnum = (value, enumValues) => {
+  if (typeof value !== "string") return value;
+  const match = enumValues.find(
+    (e) => e.toLowerCase() === value.trim().toLowerCase()
+  );
+  return match || value;
+};
+
+workshopsAwarenessSchema.pre("validate", function (next) {
+  if (this.groupType) {
+    this.groupType = normalizeEnum(this.groupType, groupTypeEnum);
+  }
+  next();
+});
+
 // Static method to get statistics
 workshopsAwarenessSchema.statics.getStats = async function () {
   const stats = await this.aggregate([

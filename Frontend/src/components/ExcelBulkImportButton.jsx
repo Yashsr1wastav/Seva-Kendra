@@ -101,8 +101,8 @@ const buildColumnLookup = (fields) =>
     const normalizedLabel = normalizeHeader(field.label);
     const normalizedKey = normalizeHeader(field.key);
 
-    if (normalizedLabel) map.set(normalizedLabel, field);
-    if (normalizedKey) map.set(normalizedKey, field);
+    if (normalizedLabel) map.set(normalizedLabel.toLowerCase(), field);
+    if (normalizedKey) map.set(normalizedKey.toLowerCase(), field);
 
     return map;
   }, new Map());
@@ -187,7 +187,7 @@ const ExcelBulkImportButton = ({
         const payload = buildNestedPayload(
           Object.fromEntries(
             Object.entries(row).map(([header, value]) => {
-              const field = headerToFieldMap.get(normalizeHeader(header));
+              const field = headerToFieldMap.get(normalizeHeader(header).toLowerCase());
               const fieldKey = field?.key || header;
               const normalizedValue = normalizeValueAgainstOptions(value, field?.options || []);
 
