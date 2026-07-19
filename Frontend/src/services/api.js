@@ -1332,7 +1332,10 @@ export const entitlementsAPI = {
 export const legalAidServiceAPI = {
   getAll: (params) => api.get("/social-justice/legal-aid-service", { params }),
   getById: (id) => api.get(`/social-justice/legal-aid-service/${id}`),
-  create: (data) => api.post("/social-justice/legal-aid-service", data),
+  create: (data) =>
+    api.post("/social-justice/legal-aid-service", data, {
+      timeout: 45000,
+    }),
   update: (id, data) =>
     api.put(`/social-justice/legal-aid-service/${id}`, data),
   delete: (id) => api.delete(`/social-justice/legal-aid-service/${id}`),

@@ -1,6 +1,11 @@
 const errorHandler = (err, req, res, next) => {
+  const normalizedStatusCode =
+    Number.isInteger(err.statusCode) && err.statusCode >= 100 && err.statusCode <= 599
+      ? err.statusCode
+      : 500;
+
   const customError = {
-    statusCode: err.statusCode || 500,
+    statusCode: normalizedStatusCode,
     msg: err.message ?? "Something went wrong try again later",
     success: false,
   };

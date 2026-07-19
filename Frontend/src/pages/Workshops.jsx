@@ -82,7 +82,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { workshopAndAwarenessAPI } from "../services/api";
+import { workshopsAwarenessAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
@@ -194,9 +194,18 @@ const Workshops = () => {
     "Women Group",
     "Community Group",
     "Farmer Group",
+    "Farmer Producer Group",
     "Student Group",
     "Other",
   ];
+
+  const createWorkshopRecord = async (data) => {
+    const payload = { ...data };
+    if (payload.groupType && payload.groupType.trim().toLowerCase() === "farmer producer group") {
+      payload.groupType = "Farmer Group";
+    }
+    return workshopsAwarenessAPI.create(payload);
+  };
 
   const statusOptions = ["Planned", "Completed", "Cancelled", "Postponed"];
 
@@ -208,23 +217,35 @@ const Workshops = () => {
         page: pagination.page,
         limit: pagination.limit,
         search: searchTerm,
-        ...filters,
       };
 
-      const response = await workshopAndAwarenessAPI.getAll(params);
-      setWorkshops(response.data.workshops || []);
+      if (filters.groupType && filters.groupType !== "all") {
+        params.groupType = filters.groupType;
+      }
+
+      const response = await workshopsAwarenessAPI.getAll(params);
+      // Handle different response structures from backend
+      const workshopsData =
+        response.data.workshops ||
+        response.data.data ||
+        (Array.isArray(response.data) ? response.data : []);
+      setWorkshops(workshopsData);
 
       // Handle pagination data - if not provided by API, create default pagination
       if (response.data.pagination) {
-        setPagination(response.data.pagination);
+        const apiPagination = response.data.pagination;
+        setPagination({
+          page: apiPagination.currentPage || apiPagination.page || 1,
+          limit: apiPagination.recordsPerPage || apiPagination.limit || 10,
+          total: apiPagination.totalRecords || apiPagination.total || workshopsData.length,
+          pages: apiPagination.totalPages || apiPagination.pages || Math.ceil((apiPagination.totalRecords || workshopsData.length) / (apiPagination.recordsPerPage || 10)) || 1,
+        });
       } else {
-        // Create default pagination based on workshops data
-        const workshopsData = response.data.workshops || [];
         setPagination({
           page: 1,
           limit: 10,
           total: workshopsData.length,
-          pages: Math.ceil(workshopsData.length / 10),
+          pages: Math.ceil(workshopsData.length / 10) || 1,
         });
       }
     } catch (error) {
@@ -250,11 +271,11 @@ const Workshops = () => {
     e.preventDefault();
     try {
       if (selectedWorkshop) {
-        await workshopAndAwarenessAPI.update(selectedWorkshop._id, formData);
+        await workshopsAwarenessAPI.update(selectedWorkshop._id, formData);
         toast.success("Workshop updated successfully");
         setIsEditModalOpen(false);
       } else {
-        await workshopAndAwarenessAPI.create(formData);
+        await workshopsAwarenessAPI.create(formData);
         toast.success("Workshop created successfully");
         setIsCreateModalOpen(false);
       }
@@ -293,7 +314,7 @@ const Workshops = () => {
   // Handle delete
   const handleDelete = async (id) => {
     try {
-      await workshopAndAwarenessAPI.delete(id);
+      await workshopsAwarenessAPI.delete(id);
       toast.success("Workshop deleted successfully");
       fetchWorkshops();
     } catch (error) {
@@ -363,7 +384,7 @@ const Workshops = () => {
                     templateFields={[
                       { label: "Group ID", key: "groupId" },
                       { label: "Group Name", key: "groupName" },
-                      { label: "Group Type", key: "groupType", options: ["CBUCBO", "SHG", "Youth Group", "Women Group", "Community Group", "Farmer Group", "Student Group", "Other"] },
+                      { label: "Group Type", key: "groupType", options: ["CBUCBO", "SHG", "Youth Group", "Women Group", "Community Group", "Farmer Group", "Farmer Producer Group", "Student Group", "Other"] },
                       { label: "Ward No", key: "wardNo" },
                       { label: "Habitation", key: "habitation" },
                       { label: "Project Responsible", key: "projectResponsible" },
@@ -390,7 +411,7 @@ const Workshops = () => {
                       totalParticipants: "28",
                       outcome: "Participants understood the basics",
                     }}
-                    createRecord={workshopAndAwarenessAPI.create}
+                    createRecord={createWorkshopRecord}
                     onImported={fetchWorkshops}
                   />
                 </CardContent>

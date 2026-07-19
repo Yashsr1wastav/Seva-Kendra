@@ -118,14 +118,20 @@ const groupTypeEnum = [
   "Women Group",
   "Community Group",
   "Farmer Group",
+  "Farmer Producer Group",
   "Student Group",
   "Other",
 ];
 
 const normalizeEnum = (value, enumValues) => {
   if (typeof value !== "string") return value;
+  let trimmedVal = value.trim();
+  // Map Farmer Producer Group to Farmer Group
+  if (trimmedVal.toLowerCase() === "farmer producer group") {
+    return "Farmer Group";
+  }
   const match = enumValues.find(
-    (e) => e.toLowerCase() === value.trim().toLowerCase()
+    (e) => e.toLowerCase() === trimmedVal.toLowerCase()
   );
   return match || value;
 };
@@ -133,6 +139,10 @@ const normalizeEnum = (value, enumValues) => {
 workshopsAwarenessSchema.pre("validate", function (next) {
   if (this.groupType) {
     this.groupType = normalizeEnum(this.groupType, groupTypeEnum);
+    // Extra guard to map to 'Farmer Group' if it normalized to 'Farmer Producer Group'
+    if (this.groupType === "Farmer Producer Group") {
+      this.groupType = "Farmer Group";
+    }
   }
   next();
 });

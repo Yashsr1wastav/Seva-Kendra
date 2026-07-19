@@ -828,7 +828,7 @@ const Dashboard = () => {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-semibold">Dashboard</h1>
+            <h1 className="text-lg font-semibold">Seva Kendra Calcutta</h1>
           </div>
           <Button
             variant="outline"

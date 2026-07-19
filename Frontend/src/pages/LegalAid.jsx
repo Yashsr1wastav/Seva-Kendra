@@ -162,6 +162,20 @@ const LegalAid = () => {
     status: "all",
     caseType: "all",
   });
+
+  // Wrapper for Excel import to ensure required fields have defaults
+  const createLegalAidRecord = async (data) => {
+    const payload = {
+      progressReporting: {},
+      photoDocumentation: [],
+      status: "Pending",
+      priority: "Medium",
+      followUpRequired: false,
+      ...data,
+    };
+    return legalAidServiceAPI.create(payload);
+  };
+
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -253,12 +267,31 @@ const LegalAid = () => {
         response.data.data ||
         response.data ||
         [];
-      const paginationData = response.data.pagination || {
-        page: 1,
-        limit: 10,
-        total: Array.isArray(servicesData) ? servicesData.length : 0,
-        pages: 1,
-      };
+      const apiPagination = response.data.pagination;
+      const paginationData = apiPagination
+        ? {
+            page: apiPagination.currentPage || apiPagination.page || 1,
+            limit: apiPagination.recordsPerPage || apiPagination.limit || 10,
+            total:
+              apiPagination.totalRecords ||
+              apiPagination.total ||
+              (Array.isArray(servicesData) ? servicesData.length : 0),
+            pages:
+              apiPagination.totalPages ||
+              apiPagination.pages ||
+              Math.ceil(
+                (apiPagination.totalRecords ||
+                  (Array.isArray(servicesData) ? servicesData.length : 0)) /
+                  (apiPagination.recordsPerPage || 10)
+              ) ||
+              1,
+          }
+        : {
+            page: 1,
+            limit: 10,
+            total: Array.isArray(servicesData) ? servicesData.length : 0,
+            pages: 1,
+          };
 
       setLegalAidServices(Array.isArray(servicesData) ? servicesData : []);
       setPagination(paginationData);
@@ -505,7 +538,7 @@ const LegalAid = () => {
                       followUpRequired: true,
                       followUpDate: "2026-02-10",
                     }}
-                    createRecord={legalAidServiceAPI.create}
+                    createRecord={createLegalAidRecord}
                     onImported={fetchLegalAidServices}
                   />
                 </CardContent>

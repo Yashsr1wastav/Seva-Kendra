@@ -262,7 +262,51 @@ const Entitlements = () => {
 
   const genderOptions = ["Male", "Female", "Other"];
 
-  // Fetch entitlements
+  // Wrapper for Excel import – normalizes flat Excel data into nested structure the backend expects
+  const createEntitlementRecord = async (data) => {
+    const entitlementType = data.entitlementType || "";
+    const docType = data["documentation.typeOfDocument"] || data.documentation?.typeOfDocument || "";
+    const docStatus = data["documentation.status"] || data.documentation?.status || "Pending";
+    const docNature = data["documentation.natureOfIssue"] || data.documentation?.natureOfIssue || "";
+    const schemeNature = data["governmentSchemes.natureOfIssue"] || data.governmentSchemes?.natureOfIssue || "";
+
+    const payload = {
+      status: "Pending",
+      progressReporting: {},
+      followUpRequired: false,
+      ...data,
+      documentation: {
+        typeOfDocument: docType,
+        natureOfIssue: docNature,
+        status: docStatus,
+        dateOfReporting: data.dateOfReporting || "",
+      },
+      governmentSchemes: {
+        eligibleSchemes: entitlementType,
+        natureOfIssue: schemeNature,
+        status: "Pending",
+      },
+      idProofAndDomicile: {
+        typeOfDocument: docType,
+        natureOfIssue: docNature,
+        status: docStatus,
+        dateOfReporting: data.dateOfReporting || "",
+      },
+      schemes: {
+        eligibleSchemes: entitlementType,
+        natureOfIssue: schemeNature,
+        status: "Pending",
+      },
+    };
+    // Remove flat dotted keys that were expanded above
+    delete payload["documentation.typeOfDocument"];
+    delete payload["documentation.status"];
+    delete payload["documentation.natureOfIssue"];
+    delete payload["governmentSchemes.natureOfIssue"];
+    return entitlementsAPI.create(payload);
+  };
+
+
   const fetchEntitlements = async () => {
     setLoading(true);
     try {
@@ -552,8 +596,6 @@ const Entitlements = () => {
                     templateFields={[
                       { label: "Household Code", key: "householdCode" },
                       { label: "ID Code", key: "idCode" },
-                      { label: "Beneficiary ID", key: "beneficiaryId" },
-                      { label: "Beneficiary Name", key: "beneficiaryName" },
                       { label: "Name", key: "name" },
                       { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
                       { label: "Age", key: "age" },
@@ -578,8 +620,6 @@ const Entitlements = () => {
                     sampleRow={{
                       householdCode: "HH-001",
                       idCode: "ID-001",
-                      beneficiaryId: "BEN-001",
-                      beneficiaryName: "Lakshmi",
                       name: "Lakshmi",
                       gender: "Female",
                       age: "42",
@@ -592,13 +632,12 @@ const Entitlements = () => {
                       reportedBy: "Volunteer",
                       entitlementType: "Pension",
                       applicationDate: "2026-01-21",
-                      documentation: "",
                       status: "Pending",
                       remarks: "",
                       followUpRequired: false,
                       followUpDate: "",
                     }}
-                    createRecord={entitlementsAPI.create}
+                    createRecord={createEntitlementRecord}
                     onImported={fetchEntitlements}
                   />
                 </CardContent>
@@ -1182,34 +1221,7 @@ const Entitlements = () => {
                         placeholder="Enter reported by"
                       />
                     </div>
-                    <div>
-                      <Label htmlFor="beneficiaryId">Beneficiary ID</Label>
-                      <Input
-                        id="beneficiaryId"
-                        value={formData.beneficiaryId}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            beneficiaryId: e.target.value,
-                          })
-                        }
-                        placeholder="Enter beneficiary ID"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="beneficiaryName">Beneficiary Name</Label>
-                      <Input
-                        id="beneficiaryName"
-                        value={formData.beneficiaryName}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            beneficiaryName: e.target.value,
-                          })
-                        }
-                        placeholder="Enter beneficiary name"
-                      />
-                    </div>
+
                     <div>
                       <Label htmlFor="entitlementType">Entitlement Type</Label>
                       <Select

@@ -189,7 +189,23 @@ const ExcelBulkImportButton = ({
             Object.entries(row).map(([header, value]) => {
               const field = headerToFieldMap.get(normalizeHeader(header).toLowerCase());
               const fieldKey = field?.key || header;
-              const normalizedValue = normalizeValueAgainstOptions(value, field?.options || []);
+              let normalizedValue = normalizeValueAgainstOptions(value, field?.options || []);
+
+              // Normalize contact/phone numbers to exactly 10 digits starting with 6-9
+              const lowerKey = fieldKey.toLowerCase();
+              if (lowerKey.includes("contactno") || lowerKey.includes("phone") || lowerKey.includes("contactnumber") || lowerKey.includes("contact")) {
+                if (typeof normalizedValue === "string" || typeof normalizedValue === "number") {
+                  let cleaned = String(normalizedValue).replace(/\s+/g, "").replace(/-+/g, "").replace(/\(+/g, "").replace(/\)+/g, "");
+                  if (cleaned.startsWith("+91")) {
+                    cleaned = cleaned.substring(3);
+                  } else if (cleaned.startsWith("91") && cleaned.length === 12) {
+                    cleaned = cleaned.substring(2);
+                  } else if (cleaned.startsWith("0")) {
+                    cleaned = cleaned.substring(1);
+                  }
+                  normalizedValue = cleaned;
+                }
+              }
 
               return [fieldKey, normalizedValue];
             })

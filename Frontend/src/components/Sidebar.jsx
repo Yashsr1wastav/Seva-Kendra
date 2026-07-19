@@ -177,7 +177,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeItem = null }) => {
             </div>
             <div className="hidden lg:block">
               <span className="text-lg font-bold text-white leading-tight">Seva Kendra</span>
-              <p className="text-xs text-white/80 font-medium">CRM System</p>
+              <p className="text-xs text-white/80 font-medium">Calcutta</p>
             </div>
           </div>
         </div>
