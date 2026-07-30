@@ -172,41 +172,11 @@ class AnalyticsController {
   async getCompleteDashboard(req, res) {
     try {
       const { dateRange } = req.query;
-      
-      const [
-        overview,
-        monthlyTrends,
-        genderDistribution,
-        ageDistribution,
-        moduleDistribution,
-        statusDistribution,
-        recentActivities,
-        quickInsights
-      ] = await Promise.all([
-        analyticsService.getDashboardOverview(dateRange),
-        analyticsService.getMonthlyTrends(),
-        analyticsService.getGenderDistribution(),
-        analyticsService.getAgeDistribution(),
-        analyticsService.getModuleDistribution(),
-        analyticsService.getStatusDistribution(),
-        analyticsService.getRecentActivities(10),
-        analyticsService.getQuickInsights()
-      ]);
+      const dashboardData = await analyticsService.getCompleteDashboard(dateRange);
 
       res.status(200).json({
         success: true,
-        data: {
-          overview,
-          charts: {
-            monthlyTrends,
-            genderDistribution,
-            ageDistribution,
-            moduleDistribution,
-            statusDistribution
-          },
-          recentActivities,
-          quickInsights
-        }
+        data: dashboardData
       });
     } catch (error) {
       console.error("Error getting complete dashboard:", error);

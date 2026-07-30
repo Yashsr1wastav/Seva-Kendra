@@ -73,12 +73,14 @@ import {
   Eye,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { competitiveExamAPI, scStudentAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const EXAM_TYPE_OPTIONS = [
   "JEE Main",
@@ -691,6 +693,69 @@ const CompetitiveExams = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Bulk Import Card */}
+            {canCreate("education") && (
+              <Card className="border border-muted bg-card shadow-sm mb-6">
+                <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-foreground flex items-center gap-2">
+                      <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                      Bulk Import Competitive Exams
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Download the template, fill it in, and upload it to import records in bulk.
+                    </p>
+                  </div>
+                  <ExcelBulkImportButton
+                    label="Import Excel"
+                    description=""
+                    templateFields={[
+                      { label: "Household Code", key: "householdCode" },
+                      { label: "ID Code", key: "idCode" },
+                      { label: "Name", key: "name" },
+                      { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                      { label: "Age", key: "age" },
+                      { label: "Head of Household", key: "headOfHousehold" },
+                      { label: "Contact Number", key: "contactNo" },
+                      { label: "Ward Number", key: "wardNo" },
+                      { label: "Habitation", key: "habitation" },
+                      { label: "Project Responsible", key: "projectResponsible" },
+                      { label: "Date of Reporting", key: "dateOfReporting" },
+                      { label: "Reported By", key: "reportedBy" },
+                      { label: "Type of Exam", key: "typeOfExam", options: ["JEE Main", "JEE Advanced", "NEET", "UPSC", "SSC", "Bank PO", "Bank Clerk", "Railway", "Police", "Teaching", "State PSC", "Other"] },
+                      { label: "Target Exam Year", key: "targetExamYear" },
+                      { label: "Coaching Institute", key: "coachingInstitute" },
+                      { label: "Status", key: "status", options: ["Preparing", "Appeared", "Qualified", "Not Qualified", "Discontinued"] },
+                      { label: "Remarks", key: "remarks" },
+                    ]}
+                    sampleRow={{
+                      householdCode: "HH-301",
+                      idCode: "EXAM-001",
+                      name: "Amit Ghosh",
+                      gender: "Male",
+                      age: "19",
+                      headOfHousehold: "Tapan Ghosh",
+                      contactNo: "9876543210",
+                      wardNo: "11",
+                      habitation: "Salt Lake",
+                      projectResponsible: "Sneha Roy",
+                      dateOfReporting: "2024-02-01",
+                      reportedBy: "Coordinator Subhash",
+                      typeOfExam: "JEE Main",
+                      targetExamYear: "2024",
+                      coachingInstitute: "Apex Academy",
+                      status: "Preparing",
+                      remarks: "Enrolled in weekend batch",
+                    }}
+                    createRecord={async (payload) => {
+                      await competitiveExamAPI.create(payload);
+                    }}
+                    onImported={fetchExams}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* Exams Table */}
             <Card>

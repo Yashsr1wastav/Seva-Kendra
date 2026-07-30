@@ -73,12 +73,14 @@ import {
   Eye,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { dropoutAPI, scStudentAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -477,6 +479,71 @@ const Dropouts = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Bulk Import Card */}
+            {canCreate("education") && (
+              <Card className="border border-muted bg-card shadow-sm mb-6">
+                <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-foreground flex items-center gap-2">
+                      <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                      Bulk Import Dropouts
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Download the template, fill it in, and upload it to import records in bulk.
+                    </p>
+                  </div>
+                  <ExcelBulkImportButton
+                    label="Import Excel"
+                    description=""
+                    templateFields={[
+                      { label: "Household Code", key: "householdCode" },
+                      { label: "ID Code", key: "idCode" },
+                      { label: "Name", key: "name" },
+                      { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                      { label: "Age", key: "age" },
+                      { label: "Head of Household", key: "headOfHousehold" },
+                      { label: "Contact Number", key: "contactNo" },
+                      { label: "Ward Number", key: "wardNo" },
+                      { label: "Habitation", key: "habitation" },
+                      { label: "Project Responsible", key: "projectResponsible" },
+                      { label: "Date of Reporting", key: "dateOfReporting" },
+                      { label: "Reported By", key: "reportedBy" },
+                      { label: "Last School Attended", key: "lastSchoolAttended" },
+                      { label: "Last Class Completed", key: "lastClassCompleted" },
+                      { label: "Year of Dropout", key: "yearOfDropout" },
+                      { label: "Reason for Dropout", key: "reasonForDropout" },
+                      { label: "Enrollment Status", key: "enrollmentStatus", options: ["Enrolled", "Pending", "Not Enrolled"] },
+                      { label: "Remarks", key: "remarks" },
+                    ]}
+                    sampleRow={{
+                      householdCode: "HH-201",
+                      idCode: "DROP-001",
+                      name: "Sunil Kumar",
+                      gender: "Male",
+                      age: "15",
+                      headOfHousehold: "Mohan Kumar",
+                      contactNo: "9876543210",
+                      wardNo: "16",
+                      habitation: "Kazi Para",
+                      projectResponsible: "Ravi Shankar",
+                      dateOfReporting: "2024-01-20",
+                      reportedBy: "Volunteer Suman",
+                      lastSchoolAttended: "City Model School",
+                      lastClassCompleted: "7th Standard",
+                      yearOfDropout: "2023",
+                      reasonForDropout: "Financial difficulty",
+                      enrollmentStatus: "Pending",
+                      remarks: "Counseling in progress",
+                    }}
+                    createRecord={async (payload) => {
+                      await dropoutAPI.create(payload);
+                    }}
+                    onImported={fetchDropouts}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* Dropouts Table */}
             <Card className="shadow-md">

@@ -82,12 +82,14 @@ import {
   Download,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { studyCenterAPI, teacherAPI, groupLeaderAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -691,6 +693,51 @@ const StudyCenters = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Bulk Import Card */}
+            {canCreate("education") && (
+              <Card className="border border-muted bg-card shadow-sm mb-6">
+                <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-foreground flex items-center gap-2">
+                      <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                      Bulk Import Study Centers
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Download the template, fill it in, and upload it to import records in bulk.
+                    </p>
+                  </div>
+                  <ExcelBulkImportButton
+                    label="Import Excel"
+                    description=""
+                    templateFields={[
+                      { label: "Center Name", key: "centerName" },
+                      { label: "Ward Number", key: "wardNo" },
+                      { label: "Habitation", key: "habitation" },
+                      { label: "Group Leader Name", key: "groupLeaderName" },
+                      { label: "Project Responsible", key: "projectResponsible" },
+                      { label: "Timing", key: "timing" },
+                      { label: "Address", key: "address" },
+                      { label: "Total Students", key: "totalStudents" },
+                    ]}
+                    sampleRow={{
+                      centerName: "Vivekananda Study Center",
+                      wardNo: "12",
+                      habitation: "Kalyani Basti",
+                      groupLeaderName: "Sujata Roy",
+                      projectResponsible: "Amit Sen",
+                      timing: "4:00 PM - 6:00 PM",
+                      address: "Block B, Ward 12",
+                      totalStudents: "25",
+                    }}
+                    createRecord={async (payload) => {
+                      await studyCenterAPI.create(payload);
+                    }}
+                    onImported={fetchStudyCenters}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* Study Centers Table */}
             <Card>

@@ -58,11 +58,13 @@ import {
   Download,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { motherChildAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const MotherChild = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -428,6 +430,65 @@ const MotherChild = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bulk Import Card */}
+          {canCreate("health") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import Mother &amp; Child Records
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "Household Code", key: "householdCode" },
+                    { label: "Name of Mother", key: "nameOfMother" },
+                    { label: "Unique ID", key: "uniqueId" },
+                    { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                    { label: "Age of Mother", key: "ageOfMother" },
+                    { label: "Head of Household", key: "headOfHousehold" },
+                    { label: "Contact Number", key: "contactNo" },
+                    { label: "Ward Number", key: "wardNo" },
+                    { label: "Habitation", key: "habitation" },
+                    { label: "Project Responsible", key: "projectResponsible" },
+                    { label: "Date of Reporting", key: "dateOfReporting" },
+                    { label: "Reported By", key: "reportedBy" },
+                    { label: "Immunization Status", key: "immunizationStatus", options: ["Complete", "Incomplete", "Not Started"] },
+                    { label: "Nutritional Status", key: "nutritionalStatus", options: ["Normal", "Underweight", "Overweight", "Malnourished"] },
+                    { label: "Remarks", key: "remarks" },
+                  ]}
+                  sampleRow={{
+                    householdCode: "HH-201",
+                    nameOfMother: "Rina Devi",
+                    uniqueId: "MC-001",
+                    gender: "Female",
+                    ageOfMother: "28",
+                    headOfHousehold: "Ratan Mondal",
+                    contactNo: "9876543210",
+                    wardNo: "5",
+                    habitation: "Rajabagan",
+                    projectResponsible: "Dr. Priya Sen",
+                    dateOfReporting: "2024-01-15",
+                    reportedBy: "ASHA Worker",
+                    immunizationStatus: "Complete",
+                    nutritionalStatus: "Normal",
+                    remarks: "Regular antenatal check-up",
+                  }}
+                  createRecord={async (payload) => {
+                    await motherChildAPI.create(payload);
+                  }}
+                  onImported={fetchMotherChild}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Records Table */}
           <Card>

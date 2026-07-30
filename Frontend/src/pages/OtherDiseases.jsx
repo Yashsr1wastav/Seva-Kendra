@@ -48,11 +48,13 @@ import {
   Eye,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { otherDiseasesAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const OtherDiseases = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -352,6 +354,61 @@ const OtherDiseases = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bulk Import Card */}
+          {canCreate("health") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import Other Diseases Records
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "Name", key: "name" },
+                    { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                    { label: "Age", key: "age" },
+                    { label: "Contact Number", key: "contactNo" },
+                    { label: "Ward Number", key: "wardNo" },
+                    { label: "Habitation", key: "habitation" },
+                    { label: "Project Responsible", key: "projectResponsible" },
+                    { label: "Date of Reporting", key: "dateOfReporting" },
+                    { label: "Reported By", key: "reportedBy" },
+                    { label: "Nature of Issue", key: "natureOfIssue" },
+                    { label: "Date of Medical Screening", key: "dateOfMedicalScreening" },
+                    { label: "Overall Status", key: "overallStatus", options: ["Active", "Stable", "Recovered", "Deceased"] },
+                    { label: "Remarks", key: "remarks" },
+                  ]}
+                  sampleRow={{
+                    name: "Meena Ghosh",
+                    gender: "Female",
+                    age: "45",
+                    contactNo: "9876543210",
+                    wardNo: "10",
+                    habitation: "Tollygunge",
+                    projectResponsible: "Dr. A. Roy",
+                    dateOfReporting: "2024-02-28",
+                    reportedBy: "Field Worker F",
+                    natureOfIssue: "Hypertension",
+                    dateOfMedicalScreening: "2024-02-25",
+                    overallStatus: "Active",
+                    remarks: "On medication, regular check-up required",
+                  }}
+                  createRecord={async (payload) => {
+                    await otherDiseasesAPI.create(payload);
+                  }}
+                  onImported={fetchRecords}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

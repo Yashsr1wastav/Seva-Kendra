@@ -48,11 +48,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Edit, Trash2, Eye, Menu, Users, UserCheck, GraduationCap, BookOpen } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Eye, Menu, Users, UserCheck, GraduationCap, BookOpen, FileSpreadsheet } from "lucide-react";
 import { teacherAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const Teachers = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -571,6 +572,53 @@ const Teachers = () => {
           </div>
             </div>
           </div>
+
+          {/* Bulk Import Card */}
+          {canCreate("education") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import Teachers
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "Teacher ID", key: "teacherId" },
+                    { label: "First Name", key: "firstName" },
+                    { label: "Last Name", key: "lastName" },
+                    { label: "Email", key: "email" },
+                    { label: "Phone Number", key: "phoneNumber" },
+                    { label: "Years of Experience", key: "experienceYears" },
+                    { label: "Domain of Experience", key: "experienceDomain" },
+                    { label: "Qualification", key: "qualifications", options: ["Illiterate", "Neo-literate", "Primary", "Secondary", "Higher Secondary", "Graduate", "Post-Graduate", "Other"] },
+                    { label: "Status", key: "status", options: ["Active", "Inactive", "On Leave"] },
+                  ]}
+                  sampleRow={{
+                    teacherId: "TCH-001",
+                    firstName: "Anjali",
+                    lastName: "Roy",
+                    email: "anjali.roy@example.com",
+                    phoneNumber: "9876543210",
+                    experienceYears: "5",
+                    experienceDomain: "Primary Education",
+                    qualifications: "Graduate",
+                    status: "Active",
+                  }}
+                  createRecord={async (payload) => {
+                    await teacherAPI.create(payload);
+                  }}
+                  onImported={fetchTeachers}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Teachers Table */}
           <Card>

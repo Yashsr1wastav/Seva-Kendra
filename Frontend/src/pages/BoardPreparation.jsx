@@ -72,12 +72,14 @@ import {
   Eye,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { boardPreparationAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -453,6 +455,69 @@ const BoardPreparation = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Bulk Import Card */}
+            {canCreate("education") && (
+              <Card className="border border-muted bg-card shadow-sm mb-6">
+                <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-foreground flex items-center gap-2">
+                      <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                      Bulk Import Board Preparation
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Download the template, fill it in, and upload it to import records in bulk.
+                    </p>
+                  </div>
+                  <ExcelBulkImportButton
+                    label="Import Excel"
+                    description=""
+                    templateFields={[
+                      { label: "Household Code", key: "householdCode" },
+                      { label: "ID Code", key: "idCode" },
+                      { label: "Name", key: "name" },
+                      { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                      { label: "Age", key: "age" },
+                      { label: "Head of Household", key: "headOfHousehold" },
+                      { label: "Contact Number", key: "contactNo" },
+                      { label: "Ward Number", key: "wardNo" },
+                      { label: "Habitation", key: "habitation" },
+                      { label: "Project Responsible", key: "projectResponsible" },
+                      { label: "Date of Reporting", key: "dateOfReporting" },
+                      { label: "Reported By", key: "reportedBy" },
+                      { label: "Educational Standard", key: "educationalStandard", options: ["10th (Secondary)", "12th (Higher Secondary)", "Other"] },
+                      { label: "Education Board", key: "educationBoard", options: ["WBBSE", "WBCHSE", "CBSE", "ICSE", "ISC", "NIOS", "Other"] },
+                      { label: "School Name", key: "schoolName" },
+                      { label: "Status", key: "status", options: ["Preparing", "Appeared", "Passed", "Failed", "Discontinued"] },
+                      { label: "Remarks", key: "remarks" },
+                    ]}
+                    sampleRow={{
+                      householdCode: "HH-401",
+                      idCode: "BOARD-001",
+                      name: "Pooja Sarkar",
+                      gender: "Female",
+                      age: "16",
+                      headOfHousehold: "Bimal Sarkar",
+                      contactNo: "9876543210",
+                      wardNo: "15",
+                      habitation: "Dum Dum",
+                      projectResponsible: "Monika Sen",
+                      dateOfReporting: "2024-01-10",
+                      reportedBy: "Teacher Anita",
+                      educationalStandard: "10th (Secondary)",
+                      educationBoard: "WBBSE",
+                      schoolName: "Dum Dum Girls High School",
+                      status: "Preparing",
+                      remarks: "Attending remedial classes",
+                    }}
+                    createRecord={async (payload) => {
+                      await boardPreparationAPI.create(payload);
+                    }}
+                    onImported={fetchBoardPreps}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* Board Preparation Table */}
             <Card>

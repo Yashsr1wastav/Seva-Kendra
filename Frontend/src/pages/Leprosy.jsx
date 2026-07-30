@@ -48,11 +48,13 @@ import {
   Eye,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { leprosyAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const Leprosy = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -390,6 +392,61 @@ const Leprosy = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bulk Import Card */}
+          {canCreate("health") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import Leprosy Records
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "Name", key: "name" },
+                    { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                    { label: "Age", key: "age" },
+                    { label: "Contact Number", key: "contactNo" },
+                    { label: "Ward Number", key: "wardNo" },
+                    { label: "Habitation", key: "habitation" },
+                    { label: "Project Responsible", key: "projectResponsible" },
+                    { label: "Date of Reporting", key: "dateOfReporting" },
+                    { label: "Reported By", key: "reportedBy" },
+                    { label: "Type of Leprosy", key: "typeOfLeprosy", options: ["Pauci-Bacillary (PB)", "Multi-Bacillary (MB)"] },
+                    { label: "Status of Treatment", key: "statusOfTreatment", options: ["On MDT", "Completed", "Defaulted", "Relapsed"] },
+                    { label: "Overall Status", key: "overallStatus", options: ["Active", "Cured", "Defaulted", "Deceased"] },
+                    { label: "Remarks", key: "remarks" },
+                  ]}
+                  sampleRow={{
+                    name: "Karim Sheikh",
+                    gender: "Male",
+                    age: "50",
+                    contactNo: "9876543210",
+                    wardNo: "11",
+                    habitation: "Ultadanga",
+                    projectResponsible: "Dr. S. Biswas",
+                    dateOfReporting: "2024-02-20",
+                    reportedBy: "Health Worker D",
+                    typeOfLeprosy: "Multi-Bacillary (MB)",
+                    statusOfTreatment: "On MDT",
+                    overallStatus: "Active",
+                    remarks: "12-month MDT in progress",
+                  }}
+                  createRecord={async (payload) => {
+                    await leprosyAPI.create(payload);
+                  }}
+                  onImported={fetchRecords}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

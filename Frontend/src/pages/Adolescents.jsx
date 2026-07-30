@@ -58,12 +58,14 @@ import {
   Download,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { adolescentsAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import AddFollowUpButton from "../components/AddFollowUpButton";
 import usePermissions from "../hooks/usePermissions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const Adolescents = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -433,6 +435,65 @@ const Adolescents = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bulk Import Card */}
+          {canCreate("health") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import Adolescent Records
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "Household Code", key: "householdCode" },
+                    { label: "Name", key: "name" },
+                    { label: "Unique ID", key: "uniqueId" },
+                    { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                    { label: "Age", key: "age" },
+                    { label: "Head of Household", key: "headOfHousehold" },
+                    { label: "Contact Number", key: "contactNo" },
+                    { label: "Ward Number", key: "wardNo" },
+                    { label: "Habitation", key: "habitation" },
+                    { label: "Project Responsible", key: "projectResponsible" },
+                    { label: "Date of Reporting", key: "dateOfReporting" },
+                    { label: "Reported By", key: "reportedBy" },
+                    { label: "Education Status", key: "educationStatus", options: ["In School", "Dropped Out", "Never Enrolled", "Completed"] },
+                    { label: "Age Group", key: "ageGroup", options: ["10-12", "13-15", "16-19"] },
+                    { label: "Remarks", key: "remarks" },
+                  ]}
+                  sampleRow={{
+                    householdCode: "HH-601",
+                    name: "Priya Mondal",
+                    uniqueId: "ADO-001",
+                    gender: "Female",
+                    age: "15",
+                    headOfHousehold: "Ratan Mondal",
+                    contactNo: "9876543210",
+                    wardNo: "3",
+                    habitation: "Belgachia",
+                    projectResponsible: "Anita Sen",
+                    dateOfReporting: "2024-01-20",
+                    reportedBy: "Field Worker C",
+                    educationStatus: "In School",
+                    ageGroup: "13-15",
+                    remarks: "Regular school attendance",
+                  }}
+                  createRecord={async (payload) => {
+                    await adolescentsAPI.create(payload);
+                  }}
+                  onImported={fetchAdolescents}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Records Table */}
           <Card>

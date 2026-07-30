@@ -58,11 +58,13 @@ import {
   Download,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { healthCampAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const HealthCamps = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -454,6 +456,63 @@ const HealthCamps = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bulk Import Card */}
+          {canCreate("health") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import Health Camps
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "Date of Camp", key: "dateOfCamp" },
+                    { label: "Target Group", key: "targetGroup" },
+                    { label: "Ward Number", key: "wardNo" },
+                    { label: "Habitation", key: "habitation" },
+                    { label: "Village", key: "village" },
+                    { label: "Project Responsible", key: "projectResponsible" },
+                    { label: "Type of Health Camp", key: "typeOfHealthCamp", options: ["General", "Eye Camp", "Dental", "Maternal", "Pediatric", "Specialist Consultation", "Other"] },
+                    { label: "Medicine Type", key: "medicineType", options: ["Allopathy", "Ayurveda", "Homeopathy", "Unani", "Combination", "Other"] },
+                    { label: "Specialisation", key: "specialisation" },
+                    { label: "Male Count", key: "maleCount" },
+                    { label: "Female Count", key: "femaleCount" },
+                    { label: "Other Count", key: "otherCount" },
+                    { label: "Total Beneficiaries", key: "totalBeneficiaries" },
+                    { label: "Remarks", key: "remarks" },
+                  ]}
+                  sampleRow={{
+                    dateOfCamp: "2024-02-10",
+                    targetGroup: "Elderly & Children",
+                    wardNo: "8",
+                    habitation: "Barabazar",
+                    village: "Kolkata Central",
+                    projectResponsible: "Dr. R. K. Das",
+                    typeOfHealthCamp: "General",
+                    medicineType: "Allopathy",
+                    specialisation: "General Medicine",
+                    maleCount: "30",
+                    femaleCount: "45",
+                    otherCount: "0",
+                    totalBeneficiaries: "75",
+                    remarks: "Free health checkup camp",
+                  }}
+                  createRecord={async (payload) => {
+                    await healthCampAPI.create(payload);
+                  }}
+                  onImported={fetchHealthCamps}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Health Camps Table */}
           <Card>

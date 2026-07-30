@@ -75,12 +75,14 @@ import {
   GraduationCap,
   BookOpen,
   Home,
+  FileSpreadsheet,
 } from "lucide-react";
 import { scStudentAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -302,7 +304,7 @@ const SCStudents = () => {
         setIsCreateModalOpen(false);
       }
 
-      fetchScStudents();
+      fetchStudents();
       resetForm();
     } catch (error) {
       toast.error(error?.message || "An error occurred");
@@ -314,7 +316,7 @@ const SCStudents = () => {
     try {
       await scStudentAPI.delete(id);
       toast.success("SC student deleted successfully");
-      fetchScStudents();
+      fetchStudents();
     } catch (error) {
       toast.error("Failed to delete SC student");
     }
@@ -497,6 +499,69 @@ const SCStudents = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Bulk Import Card */}
+            {canCreate("education") && (
+              <Card className="border border-muted bg-card shadow-sm mb-6">
+                <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-foreground flex items-center gap-2">
+                      <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                      Bulk Import SC Students
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Download the template, fill it in, and upload it to import records in bulk.
+                    </p>
+                  </div>
+                  <ExcelBulkImportButton
+                    label="Import Excel"
+                    description=""
+                    templateFields={[
+                      { label: "Household Code", key: "householdCode" },
+                      { label: "ID Code", key: "idCode" },
+                      { label: "Name", key: "name" },
+                      { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                      { label: "Age", key: "age" },
+                      { label: "Head of Household", key: "headOfHousehold" },
+                      { label: "Contact Number", key: "contactNo" },
+                      { label: "Ward Number", key: "wardNo" },
+                      { label: "Habitation", key: "habitation" },
+                      { label: "Project Responsible", key: "projectResponsible" },
+                      { label: "Date of Reporting", key: "dateOfReporting" },
+                      { label: "Reported By", key: "reportedBy" },
+                      { label: "Study Center Name", key: "studyCenterName" },
+                      { label: "Class / Grade", key: "classGrade" },
+                      { label: "School Name", key: "schoolName" },
+                      { label: "Student Status", key: "studentStatus", options: ["Enrolled", "Attending", "Irregular", "Dropped Out"] },
+                      { label: "Remarks", key: "remarks" },
+                    ]}
+                    sampleRow={{
+                      householdCode: "HH-101",
+                      idCode: "STU-001",
+                      name: "Rahul Das",
+                      gender: "Male",
+                      age: "14",
+                      headOfHousehold: "Ramesh Das",
+                      contactNo: "9876543210",
+                      wardNo: "14",
+                      habitation: "Subhash Nagar",
+                      projectResponsible: "Priya Sharma",
+                      dateOfReporting: "2024-02-15",
+                      reportedBy: "Teacher Anita",
+                      studyCenterName: "Vivekananda Center",
+                      classGrade: "8th Standard",
+                      schoolName: "Kolkata High School",
+                      studentStatus: "Enrolled",
+                      remarks: "Regular student",
+                    }}
+                    createRecord={async (payload) => {
+                      await scStudentAPI.create(payload);
+                    }}
+                    onImported={fetchStudents}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* SC Students Table */}
             <Card>

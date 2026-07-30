@@ -74,12 +74,14 @@ import {
   Download,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { elderlyAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const WardCombobox = ({ id, value, onChange, options, placeholder }) => {
   const [open, setOpen] = useState(false);
@@ -489,6 +491,67 @@ const Elderly = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bulk Import Card */}
+          {canCreate("health") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import Elderly Records
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "Household Code", key: "householdCode" },
+                    { label: "Unique ID", key: "uniqueId" },
+                    { label: "Name", key: "name" },
+                    { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                    { label: "Age", key: "age" },
+                    { label: "Date of Birth", key: "dob" },
+                    { label: "Head of Household", key: "headOfHousehold" },
+                    { label: "Contact Number", key: "contactNo" },
+                    { label: "Ward Number", key: "wardNo" },
+                    { label: "Habitation", key: "habitation" },
+                    { label: "Project Responsible", key: "projectResponsible" },
+                    { label: "Date of Reporting", key: "dateOfReporting" },
+                    { label: "Reported By", key: "reportedBy" },
+                    { label: "Nature of Issue", key: "natureOfIssue", options: ["Chronic Disease", "Mental Health", "Mobility Issues", "Financial Dependency", "Social Isolation", "Other"] },
+                    { label: "Has Bank Account", key: "hasBankAccount", options: ["Yes", "No"] },
+                    { label: "Remarks", key: "remarks" },
+                  ]}
+                  sampleRow={{
+                    householdCode: "HH-701",
+                    uniqueId: "ELD-001",
+                    name: "Ram Chandra Das",
+                    gender: "Male",
+                    age: "72",
+                    dob: "1952-03-15",
+                    headOfHousehold: "Suresh Das",
+                    contactNo: "9876543210",
+                    wardNo: "12",
+                    habitation: "Santipara",
+                    projectResponsible: "Rekha Devi",
+                    dateOfReporting: "2024-01-10",
+                    reportedBy: "Field Worker A",
+                    natureOfIssue: "Chronic Disease",
+                    hasBankAccount: "Yes",
+                    remarks: "Needs regular medical follow-up",
+                  }}
+                  createRecord={async (payload) => {
+                    await elderlyAPI.create(payload);
+                  }}
+                  onImported={fetchElderly}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Elderly Records Table */}
           <Card>

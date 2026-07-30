@@ -47,11 +47,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Edit, Trash2, Eye, Menu } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Eye, Menu, FileSpreadsheet } from "lucide-react";
 import { groupLeaderAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const GroupLeaders = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -495,6 +496,53 @@ const GroupLeaders = () => {
             </Dialog>
             )}
           </div>
+
+          {/* Bulk Import Card */}
+          {canCreate("education") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import Group Leaders
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "Leader ID", key: "leaderId" },
+                    { label: "First Name", key: "firstName" },
+                    { label: "Last Name", key: "lastName" },
+                    { label: "Email", key: "email" },
+                    { label: "Phone Number", key: "phoneNumber" },
+                    { label: "Years of Experience", key: "experienceYears" },
+                    { label: "Domain of Experience", key: "experienceDomain" },
+                    { label: "Qualification", key: "qualifications", options: ["Illiterate", "Neo-literate", "Primary", "Secondary", "Higher Secondary", "Graduate", "Post-Graduate", "Other"] },
+                    { label: "Status", key: "status", options: ["Active", "Inactive", "On Leave"] },
+                  ]}
+                  sampleRow={{
+                    leaderId: "LDR-001",
+                    firstName: "Sujata",
+                    lastName: "Roy",
+                    email: "sujata.roy@example.com",
+                    phoneNumber: "9876543210",
+                    experienceYears: "4",
+                    experienceDomain: "Community Organizing",
+                    qualifications: "Graduate",
+                    status: "Active",
+                  }}
+                  createRecord={async (payload) => {
+                    await groupLeaderAPI.create(payload);
+                  }}
+                  onImported={fetchGroupLeaders}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Group Leaders Table */}
           <Card>

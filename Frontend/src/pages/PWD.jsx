@@ -75,12 +75,14 @@ import {
   Download,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { pwdAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import { getWardOptions } from "../lib/formOptions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const DISABILITY_OPTIONS = [
   "Visual Impairment",
@@ -566,6 +568,67 @@ const PWD = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bulk Import Card */}
+          {canCreate("health") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import PWD Records
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "Household Code", key: "householdCode" },
+                    { label: "Unique ID", key: "uniqueId" },
+                    { label: "Name", key: "name" },
+                    { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                    { label: "Age", key: "age" },
+                    { label: "Head of Household", key: "headOfHousehold" },
+                    { label: "Contact Number", key: "contactNo" },
+                    { label: "Ward Number", key: "wardNo" },
+                    { label: "Habitation", key: "habitation" },
+                    { label: "Project Responsible", key: "projectResponsible" },
+                    { label: "Date of Reporting", key: "dateOfReporting" },
+                    { label: "Reported By", key: "reportedBy" },
+                    { label: "Disability Type", key: "disabilityType", options: ["Visual Impairment", "Hearing Impairment", "Locomotor Disability", "Intellectual Disability", "Mental Illness", "Multiple Disabilities", "Speech and Language Disability", "Autism Spectrum Disorder", "Cerebral Palsy", "Other"] },
+                    { label: "Disability Certificate", key: "disabilityCertificate", options: ["Yes", "No", "Applied"] },
+                    { label: "UDID Status", key: "udidStatus", options: ["Issued", "Applied", "Not Applied"] },
+                    { label: "Remarks", key: "remarks" },
+                  ]}
+                  sampleRow={{
+                    householdCode: "HH-501",
+                    uniqueId: "PWD-001",
+                    name: "Suresh Roy",
+                    gender: "Male",
+                    age: "35",
+                    headOfHousehold: "Gopal Roy",
+                    contactNo: "9876543210",
+                    wardNo: "7",
+                    habitation: "Khidderpore",
+                    projectResponsible: "Sunita Das",
+                    dateOfReporting: "2024-02-01",
+                    reportedBy: "Field Worker B",
+                    disabilityType: "Locomotor Disability",
+                    disabilityCertificate: "Yes",
+                    udidStatus: "Issued",
+                    remarks: "Wheelchair required",
+                  }}
+                  createRecord={async (payload) => {
+                    await pwdAPI.create(payload);
+                  }}
+                  onImported={fetchPwd}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Records Table */}
           <Card>

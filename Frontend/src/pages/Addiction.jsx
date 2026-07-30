@@ -48,11 +48,13 @@ import {
   Eye,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { addictionAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const Addiction = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -374,6 +376,63 @@ const Addiction = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bulk Import Card */}
+          {canCreate("health") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import Addiction Records
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "Case ID", key: "caseId" },
+                    { label: "Name", key: "name" },
+                    { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                    { label: "Age", key: "age" },
+                    { label: "Contact Number", key: "contactNo" },
+                    { label: "Ward Number", key: "wardNo" },
+                    { label: "Habitation", key: "habitation" },
+                    { label: "Project Responsible", key: "projectResponsible" },
+                    { label: "Date of Reporting", key: "dateOfReporting" },
+                    { label: "Reported By", key: "reportedBy" },
+                    { label: "Substance Type", key: "substanceType", options: ["Alcohol", "Tobacco", "Cannabis", "Opioids", "Sedatives", "Multiple Substances", "Other"] },
+                    { label: "Skill Development Status", key: "statusOfLinkageWithSkillDevelopment", options: ["Linked", "Not Linked", "In Progress"] },
+                    { label: "Overall Status", key: "overallStatus", options: ["Active", "Recovering", "Recovered", "Relapsed", "Lost to Follow Up"] },
+                    { label: "Remarks", key: "remarks" },
+                  ]}
+                  sampleRow={{
+                    caseId: "ADD-001",
+                    name: "Raju Sharma",
+                    gender: "Male",
+                    age: "28",
+                    contactNo: "9876543210",
+                    wardNo: "4",
+                    habitation: "Howrah",
+                    projectResponsible: "Counselor B",
+                    dateOfReporting: "2024-01-25",
+                    reportedBy: "Field Worker E",
+                    substanceType: "Alcohol",
+                    statusOfLinkageWithSkillDevelopment: "Linked",
+                    overallStatus: "Recovering",
+                    remarks: "Enrolled in de-addiction program",
+                  }}
+                  createRecord={async (payload) => {
+                    await addictionAPI.create(payload);
+                  }}
+                  onImported={fetchRecords}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

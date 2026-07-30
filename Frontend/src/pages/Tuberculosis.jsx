@@ -48,11 +48,13 @@ import {
   Eye,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { tuberculosisAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const Tuberculosis = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -412,6 +414,71 @@ const Tuberculosis = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bulk Import Card */}
+          {canCreate("health") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import Tuberculosis Records
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "NISKHAI ID", key: "nikshaiId" },
+                    { label: "Name", key: "name" },
+                    { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                    { label: "Age", key: "age" },
+                    { label: "Contact Number", key: "contactNo" },
+                    { label: "Name of Respondant", key: "nameOfRespondant" },
+                    { label: "Contact of Respondant", key: "contactNoOfRespondant" },
+                    { label: "Ward Number", key: "wardNo" },
+                    { label: "Habitation", key: "habitation" },
+                    { label: "Project Responsible", key: "projectResponsible" },
+                    { label: "Date of Reporting", key: "dateOfReporting" },
+                    { label: "Reported By", key: "reportedBy" },
+                    { label: "Type of TB", key: "typeOfTB", options: ["Pulmonary TB", "Extra-Pulmonary TB", "Drug Resistant TB", "MDR-TB", "XDR-TB"] },
+                    { label: "Treatment for TB", key: "treatmentForTB", options: ["DOTS", "MDR Treatment", "XDR Treatment", "Other"] },
+                    { label: "Date of Medical Screening", key: "dateOfMedicalScreening" },
+                    { label: "Expected Completion Date", key: "expectedDateOfTreatmentCompletion" },
+                    { label: "Overall Status", key: "overallStatus", options: ["Active", "Cured", "Treatment Completed", "Defaulted", "Died", "Failed"] },
+                    { label: "Remarks", key: "remarks" },
+                  ]}
+                  sampleRow={{
+                    nikshaiId: "TB-2024-001",
+                    name: "Bimal Roy",
+                    gender: "Male",
+                    age: "42",
+                    contactNo: "9876543210",
+                    nameOfRespondant: "Mina Roy",
+                    contactNoOfRespondant: "9876543211",
+                    wardNo: "9",
+                    habitation: "Shyambazar",
+                    projectResponsible: "Dr. P. Mukherjee",
+                    dateOfReporting: "2024-03-01",
+                    reportedBy: "DOTS Provider",
+                    typeOfTB: "Pulmonary TB",
+                    treatmentForTB: "DOTS",
+                    dateOfMedicalScreening: "2024-02-15",
+                    expectedDateOfTreatmentCompletion: "2024-08-15",
+                    overallStatus: "Active",
+                    remarks: "On Category 1 treatment",
+                  }}
+                  createRecord={async (payload) => {
+                    await tuberculosisAPI.create(payload);
+                  }}
+                  onImported={fetchRecords}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

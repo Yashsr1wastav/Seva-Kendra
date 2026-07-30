@@ -48,11 +48,13 @@ import {
   Eye,
   RefreshCw,
   Menu,
+  FileSpreadsheet,
 } from "lucide-react";
 import { hivAPI } from "../services/api";
 import Sidebar from "../components/Sidebar";
 import usePermissions from "../hooks/usePermissions";
 import GuidelinesCard from "../components/GuidelinesCard";
+import ExcelBulkImportButton from "../components/ExcelBulkImportButton";
 
 const HIV = () => {
   const { canCreate, canEdit, canDelete, canExport } = usePermissions();
@@ -389,6 +391,61 @@ const HIV = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bulk Import Card */}
+          {canCreate("health") && (
+            <Card className="border border-muted bg-card shadow-sm mb-6">
+              <CardContent className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-foreground flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                    Bulk Import HIV Records
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Download the template, fill it in, and upload it to import records in bulk.
+                  </p>
+                </div>
+                <ExcelBulkImportButton
+                  label="Import Excel"
+                  description=""
+                  templateFields={[
+                    { label: "Name", key: "name" },
+                    { label: "Gender", key: "gender", options: ["Male", "Female", "Other"] },
+                    { label: "Age", key: "age" },
+                    { label: "Contact Number", key: "contactNo" },
+                    { label: "Ward Number", key: "wardNo" },
+                    { label: "Habitation", key: "habitation" },
+                    { label: "Project Responsible", key: "projectResponsible" },
+                    { label: "Date of Reporting", key: "dateOfReporting" },
+                    { label: "Reported By", key: "reportedBy" },
+                    { label: "HIV Stage", key: "hivStage", options: ["Stage 1", "Stage 2", "Stage 3", "Stage 4"] },
+                    { label: "Status of Treatment", key: "statusOfTreatment", options: ["On ART", "Pre-ART", "Lost to Follow Up", "Stopped Treatment", "Completed"] },
+                    { label: "Overall Status", key: "overallStatus", options: ["Active", "Stable", "Deceased", "Transferred"] },
+                    { label: "Remarks", key: "remarks" },
+                  ]}
+                  sampleRow={{
+                    name: "Ananya Das",
+                    gender: "Female",
+                    age: "30",
+                    contactNo: "9876543210",
+                    wardNo: "6",
+                    habitation: "Gariahat",
+                    projectResponsible: "Dr. K. Saha",
+                    dateOfReporting: "2024-03-05",
+                    reportedBy: "Counselor A",
+                    hivStage: "Stage 2",
+                    statusOfTreatment: "On ART",
+                    overallStatus: "Stable",
+                    remarks: "Regular ART pickup",
+                  }}
+                  createRecord={async (payload) => {
+                    await hivAPI.create(payload);
+                  }}
+                  onImported={fetchRecords}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>
